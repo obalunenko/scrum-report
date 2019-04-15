@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+      body {
+          font-family: Arial, Helvetica, sans-serif;
+      }
+
+
+      /* Full-width input fields */
+      textarea[type=text] {
+          width: 100%;
+          padding: 12px 20px;
+          margin: 8px 0;
+          display: inline-block;
+          border: 1px solid #ccc;
+          box-sizing: border-box;
+      }
+
+      /* Set a style for all buttons */
+      button {
+          background-color: #4CAF50;
+          color: white;
+          padding: 14px 20px;
+          margin: 8px 0;
+          border: none;
+          cursor: pointer;
+          width: 100%;
+      }
+
+      button:hover {
+          opacity: 0.8;
+      }
+
+      /* The Modal (background) */
+      .modal {
+          display: none; /* Hidden by default */
+          position: fixed; /* Stay in place */
+          z-index: 1; /* Sit on top */
+          left: 0;
+          top: 0;
+          width: 100%; /* Full width */
+          height: 100%; /* Full height */
+          overflow: auto; /* Enable scroll if needed */
+          background-color: rgb(0,0,0); /* Fallback color */
+          background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+          padding-top: 60px;
+      }
+
+      /* Modal Content/Box */
+      .modal-content {
+          background-color: #fefefe;
+          margin: 5% auto 15% auto; /* 5% from the top, 15% from the bottom and centered */
+          border: 1px solid #888;
+          width: 50%; /* Could be more or less, depending on screen size */
+      }
+
+      /* Add Zoom Animation */
+      .animate {
+          -webkit-animation: animatezoom 0.6s;
+          animation: animatezoom 0.6s
+      }
+
+      @-webkit-keyframes animatezoom {
+          from {-webkit-transform: scale(0)}
+          to {-webkit-transform: scale(1)}
+      }
+
+      @keyframes animatezoom {
+          from {transform: scale(0)}
+          to {transform: scale(1)}
+      }
+  </style>
+
+    <title>Index page</title>
+</head>
+<body>
+<div  align="center">
+<h2>Daily Meeting</h2>
+<button onclick="document.getElementById('id_report').style.display='block'"
+        style="width:100%;">Daily Scrum Status</button>
+</div>
+<div id="id_report" class="modal">
+    <div class="modal-content animate">
+        <div class="row">
+            <div class="col-md-6">
+                <form action="/report" method="POST"
+                      onsubmit="return confirm('Do you really want to create a report with these details?');">
+                    <div class="form-group">
+                        <label for="id_yesterday" >What did yesterday: </label>
+                        <textarea id="id_yesterday" type="text" class="form-control" name="yesterday"
+                                  required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_today">What plan to do today:</label>
+                        <textarea id="id_today" type="text" class="form-control" name="today"
+                                  required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="id_impediments">Impediments:</label>
+                        <textarea id="id_impediments" type="text" class="form-control" name="impediments"
+                                  required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-danger" type="submit" style="width:auto;">Create Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Get the modal
+    let modal = document.getElementById('id_report');
+
+    // When the user clicks anywhere outside of the modal, close it
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+</body>
+</html>
