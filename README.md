@@ -1,7 +1,7 @@
 # scrum-report
 [![Build Status](https://travis-ci.org/oleg-balunenko/scrum-report.svg?branch=master)](https://travis-ci.org/oleg-balunenko/scrum-report)
 [![Go Report Card](https://goreportcard.com/badge/github.com/oleg-balunenko/scrum-report)](https://goreportcard.com/report/github.com/oleg-balunenko/scrum-report)
-[![Latest release artifacts](https://github.com/oleg-balunenko/scrum-report/releases/latest)](https://img.shields.io/badge/artifacts-download-blue.svg)
+[![Latest release artifacts](https://img.shields.io/badge/artifacts-download-blue.svg)](https://github.com/oleg-balunenko/scrum-report/releases/latest)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
 
 
