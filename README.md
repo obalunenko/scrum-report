@@ -20,9 +20,15 @@ Daily stand up meeting scrum report generator in markdown format for slack
 ```
 
 ## Usage of scrum-report
+Download binary from [![Latest release artifacts](https://img.shields.io/badge/artifacts-download-blue.svg)](https://github.com/oleg-balunenko/scrum-report/releases/latest)
+and execute 
+Following parameters could be configured:
 ```text
   -listen_port string
     	listen port (default "8080")
   -log_level string
     	log level (default "DEBUG")
 ```
+Then open in browser page `localhost:8080` and start to us it
+
+
