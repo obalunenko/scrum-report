@@ -13,8 +13,10 @@ Daily stand up meeting scrum report generator in markdown format for slack
 •
 ```
 
-Usage of scrum-report
+## Usage of scrum-report
+```text
   -listen_port string
     	listen port (default "8080")
   -log_level string
     	log level (default "DEBUG")
+```
