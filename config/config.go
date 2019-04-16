@@ -6,15 +6,19 @@ import (
 
 // Config stores configuration for service
 type Config struct {
-	LogLevel string `config:"SCRUM_REPORT_LOGLEVEL"`
-	Port     string `config:"SCRUM_REPORT_PORT"`
+	LogLevel    string
+	Port        string
+	Host        string
+	OpenBrowser bool
 }
 
 // Load configuration from flags
 func Load() *Config {
 	var c Config
+	flag.StringVar(&c.Host, "host_address", "localhost", "address of host")
 	flag.StringVar(&c.Port, "listen_port", "8080", "listen port")
-	flag.StringVar(&c.LogLevel, "log_level", "DEBUG", "log level")
+	flag.StringVar(&c.LogLevel, "log_level", "INFO", "log level")
+	flag.BoolVar(&c.OpenBrowser, "open_browser", false, "open browser after start on index page")
 
 	flag.Parse()
 
