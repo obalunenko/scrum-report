@@ -41,7 +41,7 @@ dependencies:
 ## Dev mode - go run
 dev:
 	${call colored, dev is running...}
-	go run .
+	go run ./cmd/scrum-report/. -open_browser
 .PHONY: dev
 
 
