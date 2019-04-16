@@ -14,7 +14,7 @@ builds:
       - 386
     env:
       - CGO_ENABLED=0
-    main: ./
+    main: ./cmd/scrum-report
     ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
 
 archive:
