@@ -4,6 +4,8 @@ github.com/gorilla/handlers
 github.com/gorilla/mux
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
 # github.com/sirupsen/logrus v1.4.1
 github.com/sirupsen/logrus
 # golang.org/x/sys v0.0.0-20180905080454-ebe1bf3edb33
