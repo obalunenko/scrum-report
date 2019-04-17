@@ -93,6 +93,10 @@ imports:
 	./scripts/fix-imports-order.sh
 .PHONY: imports
 
+go-generate:
+	${call colored, go generate ...}
+	./scripts/generate.sh
+.PHONY: go-generate
 
 
 .DEFAULT_GOAL := test
