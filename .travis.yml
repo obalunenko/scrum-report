@@ -54,7 +54,7 @@ jobs:
     script:
     - echo "Build stage"
     - make compile
-    after_success: 
+    after_success:
     deploy:
       skip_cleanup: true
       provider: script
@@ -62,5 +62,5 @@ jobs:
       on:
         tags: true
         condition: "$TRAVIS_OS_NAME = linux"
-    addons: 
+    addons:
     ssh_known_hosts: github.com
