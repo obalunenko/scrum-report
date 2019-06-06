@@ -76,3 +76,15 @@ func sanitizeURL(url string) (string, error) {
 	}
 	return u.String(), nil
 }
+
+func processFormValue(data string) []string {
+	var res []string
+	arr := strings.Split(data, "\r\n")
+	// remove empty strings
+	for _, a := range arr {
+		if a != "" {
+			res = append(res, a)
+		}
+	}
+	return res
+}

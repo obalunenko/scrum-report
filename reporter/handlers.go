@@ -1,10 +1,8 @@
 package reporter
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -27,39 +25,40 @@ type report struct {
 }
 
 func createHandler(writer http.ResponseWriter, request *http.Request) {
-	var r report
+	err := request.ParseForm()
+	if err != nil {
+		http.Error(writer, "failed to parse form", http.StatusInternalServerError)
+		return
+	}
 
-	today := request.FormValue("today")
-	r.Today = strings.Split(today, "\n")
-
-	yesterday := request.FormValue("yesterday")
-	r.Yesterday = strings.Split(yesterday, "\n")
-
-	impediments := request.FormValue("impediments")
-	r.Impediments = strings.Split(impediments, "\n")
+	today := processFormValue(request.Form.Get("today"))
+	yesterday := processFormValue(request.Form.Get("yesterday"))
+	impediments := processFormValue(request.FormValue("impediments"))
 
 	writer.Header().Set("Content-Type", "text/html")
-	if err := reportPageTmpl.Execute(writer, r); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(writer, "failed to execute template")
+	if err := reportPageTmpl.Execute(writer, report{
+		Yesterday:   yesterday,
+		Today:       today,
+		Impediments: impediments,
+	}); err != nil {
+		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
 	}
 }
 
 func indexHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "text/html")
 	if err := homePageTmpl.Execute(writer, nil); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(writer, "failed to execute template")
+		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
 	}
 
 }
 
-// optionsHandler set up allowed verbs
+// optionsHandlerOld set up allowed verbs
 func optionsHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Allow", "GET,POST")
 }
 
-// loggerHandler Log all HTTP requests to output in a proper format.
+// loggerHandlerOld Log all HTTP requests to output in a proper format.
 func loggerHandler(inner http.Handler, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
