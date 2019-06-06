@@ -27,7 +27,7 @@ function vet(){
 
 function fmt(){
     echo "fmt lint..."
-    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' |grep -v '*/bindata.go'))
+    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' |grep -v 'bindata.go'))
 
     if [[ ${fmts} ]]; then
         echo "fix it:"
