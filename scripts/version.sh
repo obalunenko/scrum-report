@@ -5,7 +5,7 @@ function require_clean_work_tree () {
     git update-index -q --ignore-submodules --refresh
     err=0
 
-    # Disallow unstaged changes in the working tree
+    # Disallow unstagged changes in the working tree
     if ! git diff-files --quiet --ignore-submodules --
     then
         echo >&2 "cannot $1: you have unstaged changes."
@@ -40,13 +40,13 @@ function menu(){
 
     case "$selection" in
         1) printf "Major updates......\n"
-            NEWVERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, ($1+1),0,0 }')
+            NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, ($1+1),0,0 }')
         ;;
         2) printf "Run Minor update.........\n"
-            NEWVERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, $1,($2+1),0 }')
+            NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, $1,($2+1),0 }')
         ;;
         3) printf "Patch update.........\n"
-            NEWVERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, $1,$2,($3 + 1) }')
+            NEW_VERSION=$(git tag | sed 's/\(.*v\)\([0-9]*\)\.\([0-9]*\)\.\([0-9]*\)/\2;\3;\4;\1/g' | sort  -t';' -k 1,1n  -k 2,2n -k 3,3n | tail -n 1  | awk -F';' '{printf "%s%d.%d.%d", $4, $1,$2,($3 + 1) }')
         ;;
         4) printf "Exit................................\n"
             exit 1
@@ -68,13 +68,13 @@ git pull
 ## Sem ver update menu
 menu
 
-if [[ "${NEWVERSION}" = "" ]]; then
-    NEWVERSION="v1.0.0"
+if [[ "${NEW_VERSION}" = "" ]]; then
+    NEW_VERSION="v1.0.0"
 fi
 
-echo ${NEWVERSION}
+echo ${NEW_VERSION}
 
-message="version ${NEWVERSION}"
+message="version ${NEW_VERSION}"
 ADD="version"
 read -r  -n 1 -p "y?:" userok
 echo ""
@@ -86,6 +86,6 @@ if [[ "$userok" = "y" ]]; then
         ADD="."
         echo ""
     fi
-    echo ${NEWVERSION} > version && git add ${ADD} && git commit -m "$message"&& git tag -a ${NEWVERSION} -m ${NEWVERSION} && git push --tags && git push
+    echo ${NEW_VERSION} > version && git add ${ADD} && git commit -m "$message"&& git tag -a ${NEW_VERSION} -m ${NEW_VERSION} && git push --tags && git push
 fi
 echo

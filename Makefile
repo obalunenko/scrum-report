@@ -90,7 +90,7 @@ release:
 ## Fix imports sorting
 imports:
 	${call colored, sort and group imports...}
-	./scripts/fix-imports-order.sh
+	./scripts/fix-imports.sh
 .PHONY: imports
 
 go-generate:

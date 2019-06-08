@@ -50,38 +50,22 @@
 <body>
 <div markdown="1">
     <article id="report">
-        <p>*Yesterday*</p>
-
-        <p>
+        <p>*Yesterday*<br>
         {{range $a := .Yesterday}}
-
             • {{$a}}<br>
         {{end}}
-        </p>
 
 
-
-
-        <p>*Today*</p>
-
-        <p>
-            {{range $a := .Today}}
-
+        <p>*Today*<br>
+           {{range $a := .Today}}
                 • {{$a}}<br>
             {{end}}
-        </p>
 
 
-
-
-        <p>*Impediments*</p>
-
-        <p>
-            {{range $a := .Impediments}}
-
-                • {{$a}}<br>
-            {{end}}
-        </p>
+        <p>*Impediments*<br>
+        {{range $a := .Impediments}}
+            • {{$a}}<br>
+        {{end}}
 
 
     </article>

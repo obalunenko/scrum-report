@@ -3,17 +3,31 @@
 
 function vet(){
     echo "vet project..."
-    go vet $(go list ./...)
+    declare -a vet_errs=$(go vet $(go list ./...))
     EXIT_CODE=$?
     if [[ ${EXIT_CODE} -ne 0 ]]; then
         exit 1
     fi
+      if [[ ${vet_errs} ]]; then
+        echo "fix it:"
+        for f in "${vet_errs[@]}"
+        do
+            echo "$f"
+
+        done
+        exit 1
+
+    else
+        echo "code is ok"
+        echo ${vet_errs}
+    fi
+    echo ""
     echo ""
 }
 
 function fmt(){
     echo "fmt lint..."
-    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' |grep -v '*/bindata.go'))
+    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' |grep -v 'bindata.go'))
 
     if [[ ${fmts} ]]; then
         echo "fix it:"
