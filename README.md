@@ -4,6 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/oleg-balunenko/scrum-report)](https://goreportcard.com/report/github.com/oleg-balunenko/scrum-report)
 [![Latest release artifacts](https://img.shields.io/badge/artifacts-download-blue.svg)](https://github.com/oleg-balunenko/scrum-report/releases/latest)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Foleg-balunenko%2Fscrum-report.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Foleg-balunenko%2Fscrum-report?ref=badge_shield)
 
 Daily stand up meeting scrum report generator in markdown format for slack
 
@@ -45,3 +46,7 @@ Then open in browser page `localhost:8080` and start to us it
 ![first step](./docs/img2.png)
 
 ![first step](./docs/img3.png)
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Foleg-balunenko%2Fscrum-report.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Foleg-balunenko%2Fscrum-report?ref=badge_large)
