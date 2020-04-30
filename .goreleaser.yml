@@ -4,7 +4,8 @@ release:
     name: scrum-report
 
 builds:
-  - binary: scrum-report
+  - id: service
+    binary: scrum-report
     goos:
       - darwin
       - windows
