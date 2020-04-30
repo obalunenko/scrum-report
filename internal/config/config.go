@@ -1,30 +1,30 @@
 package config
 
 import (
-	"flag"
+	"os"
 )
 
 // Config stores configuration for service.
 type Config struct {
-	LogLevel    string
-	Port        string
-	Host        string
-	Debug       bool
-	OpenBrowser bool
+	LogLevel string
+	Port     string
 }
 
 // Load configuration from flags.
-func Load() *Config {
+func Load() Config {
 	var c Config
 
-	flag.StringVar(&c.Host, "host_address", "127.0.0.1", "address of host")
-	flag.StringVar(&c.Port, "listen_port", "8080", "listen port")
-	flag.StringVar(&c.LogLevel, "log_level", "INFO", "log level")
-	flag.BoolVar(&c.Debug, "debug", false, `Run debug mode - use real ip machine instead localhost 
-	to possible to debug with Charles`)
-	flag.BoolVar(&c.OpenBrowser, "open_browser", false, "open browser after start on index page")
+	c.Port = getStringOrDefault("SCRUM_REPORT_PORT", "8080")
+	c.LogLevel = getStringOrDefault("SCRUM_REPORT_LOG_LEVEL", "INFO")
 
-	flag.Parse()
+	return c
+}
 
-	return &c
+func getStringOrDefault(key string, defVal string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok || val == "" {
+		return defVal
+	}
+
+	return val
 }
