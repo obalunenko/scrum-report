@@ -1,3 +1,4 @@
+// Package reporter provides functionality for report generation.
 package reporter
 
 import (
@@ -39,12 +40,12 @@ func routes() []route {
 
 // Service holds all data required by reporter.
 type Service struct {
-	config  *config.Config
+	config  config.Config
 	handler http.Handler
 }
 
 // New creates new service from passed config.
-func New(cfg *config.Config) *Service {
+func New(cfg config.Config) *Service {
 	return &Service{
 		config:  cfg,
 		handler: newRouter(),
@@ -53,18 +54,8 @@ func New(cfg *config.Config) *Service {
 
 // Run runs reporter service.
 func (s *Service) Run() error {
-	addr := fmt.Sprintf("%s:%s", s.config.Host, s.config.Port)
+	addr := fmt.Sprintf(":%s", s.config.Port)
 	log.Debugf("address: %s", addr)
-
-	if s.config.OpenBrowser {
-		go func() {
-			err := open(addr)
-			if err != nil {
-				// not need to return this error - just log.
-				log.Errorf("failed to open browser: %v", err)
-			}
-		}()
-	}
 
 	return http.ListenAndServe(addr, s.handler)
 }

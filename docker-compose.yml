@@ -6,6 +6,11 @@ services:
     networks:
       - scrum_report
     image: olegbalunenko/scrum-report
+    environment:
+      SCRUM_REPORT_PORT: "8080"
+      SCRUM_REPORT_LOG_LEVEL: "DEBUG"
+    ports:
+    - "8080:8080"
 
 networks:
   scrum_report:
