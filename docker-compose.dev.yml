@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  scrum-report:
+    restart: unless-stopped
+    container_name: scrum-report
+    networks:
+      - scrumreport_dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+
+networks:
+  scrumreport_dev:
+    driver: bridge

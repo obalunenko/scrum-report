@@ -6,9 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/oleg-balunenko/scrum-report/config"
-	"github.com/oleg-balunenko/scrum-report/logger"
-	"github.com/oleg-balunenko/scrum-report/reporter"
+	"github.com/oleg-balunenko/scrum-report/internal/config"
+	"github.com/oleg-balunenko/scrum-report/internal/logger"
+	"github.com/oleg-balunenko/scrum-report/internal/reporter"
 )
 
 func main() {
