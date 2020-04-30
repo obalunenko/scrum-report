@@ -26,7 +26,7 @@ type report struct {
 
 func createHandler(writer http.ResponseWriter, request *http.Request) {
 	if err := request.ParseForm(); err != nil {
-		http.Error(writer, "failed to parse form", http.StatusInternalServerError)
+		http.Error(writer, "failed to parse form", http.StatusBadRequest)
 		return
 	}
 
@@ -47,7 +47,7 @@ func createHandler(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func indexHandler(writer http.ResponseWriter, request *http.Request) {
+func indexHandler(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Content-Type", "text/html")
 
 	if err := homePageTmpl.Execute(writer, nil); err != nil {
@@ -56,7 +56,7 @@ func indexHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 // optionsHandlerOld set up allowed verbs.
-func optionsHandler(writer http.ResponseWriter, request *http.Request) {
+func optionsHandler(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Allow", "GET,POST")
 }
 

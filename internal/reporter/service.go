@@ -1,3 +1,4 @@
+// Package reporter provides functionality for report generation.
 package reporter
 
 import (
