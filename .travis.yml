@@ -12,55 +12,41 @@ env:
   - secure: ftR2s0eS15yrRvHptkKa4rXXLxZd3y4E1ikHk+IP1zIjXYvyDKduQg2VbhQbIWhostniMsk6NeIWd+qfdqQz4JMMvPGRJ1dYiHcRAulrrOA288fjz+j5WxKbDSxHAe1KZjkaebK+VYMvtCOxTHg6eX+Udwmj6JTKTcdjGNtDCKNpwpAcb/kacN5UOAAMr5mT9cpQ8Y8TbN3pO9vp2QT6LDFXD5hz2AcPpgjG3BZtk2Ac6Z9x0BHKF4kp2CpPr4tjs25YlbkbQXCfo4Mdn9ODCzDCOiqNcT+1P7nkqdNnVJSzSms0XL7862RLEMln39S1xXV8ff2mz8Txp0uWyxWI+mszJVlKtuWAs014tkMj/h9vlhnl+sGJMuK9FlSax69YfWpfoIhnfvO6eIdCrw02LG8I/EHq20uLYKj3IDkWNIreqdvu+ZwKGatArtQk1n/wr+GKqZKcDv2DbcTi3VZoXaqePCDUbihN3ps2ynP+oUWvNmpCz0nlz3QyIFyS3xIMODOjDRCAicjumiA1CnjSavIesttgP9ET0YUaejXyjEGm/xCQbtaNsooabS3canfjXdp8iDxdBc3xhQ1k63EtKbKqGdw/20zBMzaNE6GCtm8myafLDIr6XBCwse24JHEErPNjRjtsCYeCECY6CQSJmutIt/q7eoOZEgt/YgctlpY=
 jobs:
   include:
-  - stage: Unit Tests
-    go:
-    - 1.14.x
-    os:
-    - linux
-    install:
-    - env GO111MODULE=off
-    - make dependencies
-    script:
-    - echo "Run unit tests..."
-    - env GO111MODULE=on
-    - make test
-    - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-    after_success:
-    - bash <(curl -s https://codecov.io/bash)
-  - stage: Metalinter analysis
-    go:
-    - 1.14.x
-    os:
-    - linux
-    install:
-    - env GO111MODULE=off
-    - make dependencies
-    script:
-    - env GO111MODULE=off
-    - make lint
-  - stage: Sonar Scanner
-    addons:
-      sonarcloud:
-        organization: oleg-balunenko-github
-        token: "$SONAR_TOKEN"
-    script:
-    - sonar-scanner -Dsonar.projectVersion=${TRAVIS_TAG}
-  - stage: Build Application
-    go:
-    - 1.14.x
-    os:
-    - linux
-    go_import_path: github.com/oleg-balunenko/scrum-report
-    script:
-    - echo "Build stage"
-    - make compile
-    after_success:
-    deploy:
-      skip_cleanup: true
-      provider: script
-      script: make release
-      on:
-        tags: true
-        condition: "$TRAVIS_OS_NAME = linux"
-    addons:
-    ssh_known_hosts: github.com
+    - stage: Unit Tests, Metalinter, Sonar
+      go:
+        - 1.14.x
+      os:
+        - linux
+      before_script:
+        - echo "dependencies install"
+        - env GO111MODULE=off
+        - make dependencies
+      script:
+        - echo "Run unit tests..."
+        - env GO111MODULE=on
+        - go test -v -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.out -json ./... > tests.out
+        - make lint-ci
+        - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken ${COVERALLS_TOKEN}
+        - sonar-scanner -Dsonar.projectVersion=${TRAVIS_TAG}
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
+
+    - stage: Build Application
+      go:
+        - 1.14.x
+      os:
+        - linux
+      go_import_path: github.com/oleg-balunenko/scrum-report
+      script:
+        - echo "Build stage"
+        - make compile
+      after_success:
+      deploy:
+        skip_cleanup: true
+        provider: script
+        script: make release
+        on:
+          tags: true
+          condition: "$TRAVIS_OS_NAME = linux"
+      addons:
+      ssh_known_hosts: github.com
