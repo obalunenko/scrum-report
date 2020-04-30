@@ -11,7 +11,7 @@ import (
 	"github.com/oleg-balunenko/scrum-report/internal/config"
 )
 
-// route Define a HTTP route with given logical name, http method, route pattern and handler function
+// route Define a HTTP route with given logical name, http method, route pattern and handler function.
 type route struct {
 	description string
 	method      string
@@ -19,30 +19,31 @@ type route struct {
 	handlerFunc http.HandlerFunc
 }
 
-// handler Describe all service API
-
-var routes = []route{
-	{
-		description: "index",
-		method:      "GET",
-		path:        "/",
-		handlerFunc: indexHandler,
-	},
-	{
-		description: "create report",
-		method:      "POST",
-		path:        "/report",
-		handlerFunc: createHandler,
-	},
+// handler Describe all service API.
+func routes() []route {
+	return []route{
+		{
+			description: "index",
+			method:      "GET",
+			path:        "/",
+			handlerFunc: indexHandler,
+		},
+		{
+			description: "create report",
+			method:      "POST",
+			path:        "/report",
+			handlerFunc: createHandler,
+		},
+	}
 }
 
-// Service holds all data required by reporter
+// Service holds all data required by reporter.
 type Service struct {
 	config  *config.Config
 	handler http.Handler
 }
 
-// New creates new service from passed config
+// New creates new service from passed config.
 func New(cfg *config.Config) *Service {
 	return &Service{
 		config:  cfg,
@@ -50,7 +51,7 @@ func New(cfg *config.Config) *Service {
 	}
 }
 
-// Run runs reporter service
+// Run runs reporter service.
 func (s *Service) Run() error {
 	addr := fmt.Sprintf("%s:%s", s.config.Host, s.config.Port)
 	log.Debugf("address: %s", addr)
@@ -59,16 +60,16 @@ func (s *Service) Run() error {
 		go func() {
 			err := open(addr)
 			if err != nil {
-				// not need to return this error - just log
+				// not need to return this error - just log.
 				log.Errorf("failed to open browser: %v", err)
 			}
 		}()
 	}
-	return http.ListenAndServe(addr, s.handler)
 
+	return http.ListenAndServe(addr, s.handler)
 }
 
-// newRouter creates a new reporter service handler
+// newRouter creates a new reporter service handler.
 func newRouter() http.Handler {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -78,8 +79,7 @@ func newRouter() http.Handler {
 		Methods(http.MethodOptions).
 		Handler(options)
 
-	for _, route := range routes {
-
+	for _, route := range routes() {
 		handler := http.Handler(route.handlerFunc)
 		handler = loggerHandler(handler, route.description)
 		handler = handlers.CompressHandler(handler)

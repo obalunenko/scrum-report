@@ -10,6 +10,7 @@ func Test_processFormValue(t *testing.T) {
 	type args struct {
 		data string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -25,6 +26,7 @@ func Test_processFormValue(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

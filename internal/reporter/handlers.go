@@ -25,8 +25,7 @@ type report struct {
 }
 
 func createHandler(writer http.ResponseWriter, request *http.Request) {
-	err := request.ParseForm()
-	if err != nil {
+	if err := request.ParseForm(); err != nil {
 		http.Error(writer, "failed to parse form", http.StatusInternalServerError)
 		return
 	}
@@ -36,24 +35,27 @@ func createHandler(writer http.ResponseWriter, request *http.Request) {
 	impediments := processFormValue(request.FormValue("impediments"))
 
 	writer.Header().Set("Content-Type", "text/html")
-	if err := reportPageTmpl.Execute(writer, report{
+
+	err := reportPageTmpl.Execute(writer, report{
 		Yesterday:   yesterday,
 		Today:       today,
 		Impediments: impediments,
-	}); err != nil {
+	})
+
+	if err != nil {
 		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
 	}
 }
 
 func indexHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "text/html")
+
 	if err := homePageTmpl.Execute(writer, nil); err != nil {
 		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
 	}
-
 }
 
-// optionsHandlerOld set up allowed verbs
+// optionsHandlerOld set up allowed verbs.
 func optionsHandler(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Allow", "GET,POST")
 }

@@ -4,7 +4,7 @@ import (
 	"flag"
 )
 
-// Config stores configuration for service
+// Config stores configuration for service.
 type Config struct {
 	LogLevel    string
 	Port        string
@@ -13,9 +13,10 @@ type Config struct {
 	OpenBrowser bool
 }
 
-// Load configuration from flags
+// Load configuration from flags.
 func Load() *Config {
 	var c Config
+
 	flag.StringVar(&c.Host, "host_address", "127.0.0.1", "address of host")
 	flag.StringVar(&c.Port, "listen_port", "8080", "listen port")
 	flag.StringVar(&c.LogLevel, "log_level", "INFO", "log level")

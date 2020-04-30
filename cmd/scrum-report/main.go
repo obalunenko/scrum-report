@@ -20,21 +20,24 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to get ip: %v", err)
 		}
+
 		cfg.Host = ip
 	}
+
 	logger.SetUp(cfg)
+
 	r := reporter.New(cfg)
 
 	log.Fatal(r.Run())
-
 }
 
 func getIP() (string, error) {
 	addrs, err := net.InterfaceAddrs()
-	var ip string
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get addresses")
 	}
+
+	var ip string
 
 	for _, address := range addrs {
 		// check the address type and if it is not a loopback the display it
@@ -43,9 +46,8 @@ func getIP() (string, error) {
 				ip = ipnet.IP.String()
 				break
 			}
-
 		}
 	}
-	return ip, nil
 
+	return ip, nil
 }
