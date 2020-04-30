@@ -1,0 +1,12 @@
+version: "3.7"
+services:
+  scrum-report:
+    restart: unless-stopped
+    container_name: scrum-report
+    networks:
+      - scrum_report
+    image: olegbalunenko/scrum-report
+
+networks:
+  scrum_report:
+    driver: bridge
