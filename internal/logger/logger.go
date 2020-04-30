@@ -9,7 +9,7 @@ import (
 )
 
 // SetUp sets up logger logs level and format.
-func SetUp(config *config.Config) {
+func SetUp(config config.Config) {
 	log.SetOutput(os.Stdout)
 	log.SetFormatter(new(log.TextFormatter))
 
