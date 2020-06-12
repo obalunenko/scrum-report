@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/oleg-balunenko/scrum-report.svg?branch=master)](https://travis-ci.org/oleg-balunenko/scrum-report)
 [![Go Report Card](https://goreportcard.com/badge/github.com/oleg-balunenko/scrum-report)](https://goreportcard.com/report/github.com/oleg-balunenko/scrum-report)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
-[![Latest release artifacts](https://img.shields.io/github/v/release/oleg-balunenko/scrum-report)](https://github.com/oleg-balunenko/spamassassin-parser/releases/latest)
+[![Latest release artifacts](https://img.shields.io/github/v/release/oleg-balunenko/scrum-report)](https://github.com/oleg-balunenko/scrum-report/releases/latest)
 [![Docker pulls](https://img.shields.io/docker/pulls/olegbalunenko/scrum-report)](https://hub.docker.com/r/olegbalunenko/scrum-report)
 [![License](https://img.shields.io/github/license/oleg-balunenko/scrum-report)](/LICENSE)
 
