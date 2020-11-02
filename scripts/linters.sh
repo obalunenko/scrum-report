@@ -27,7 +27,7 @@ function vet(){
 
 function fmt(){
     echo "fmt lint..."
-    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' ))
+    declare -a fmts=$(gofmt -s -l  $(find . -type f -name '*.go' | grep -v 'vendor' |grep -v '.git' | grep -v "*.generated.go"))
 
     if [[ ${fmts} ]]; then
         echo "fix it:"
@@ -48,7 +48,7 @@ function fmt(){
 function go-lint(){
     echo "golint..."
     if [[ -f "$(go env GOPATH)/bin/golint" ]] || [[ -f "/usr/local/bin/golint" ]]; then
-    declare -a lints=$(golint $(go list ./...))  ## its a hack to not lint generated code
+    declare -a lints=$(golint $(go list ./... | grep -v "*.generated.go"))  ## its a hack to not lint generated code
     if [[ ${lints} ]]; then
         echo "fix it:"
         for l in "${lints[@]}"
