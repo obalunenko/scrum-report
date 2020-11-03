@@ -14,6 +14,7 @@ function get_dependencies() {
     "mvdan.cc/unparam"
     "golang.org/x/tools/cmd/stringer"
     "github.com/go-bindata/go-bindata/v3/..."
+    "mvdan.cc/gofumpt/..."
   )
 
   ## now loop through the above array

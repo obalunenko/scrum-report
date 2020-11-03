@@ -72,6 +72,10 @@ imports:
 	./scripts/fix-imports.sh
 .PHONY: imports
 
+fumpt:
+	./scripts/fix-gofumpts.sh
+.PHONY: fumpt
+
 ## dependencies - fetch all dependencies for sripts
 dependencies:
 	./scripts/get-dependencies.sh
