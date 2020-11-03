@@ -13,7 +13,8 @@ function get_dependencies() {
     "github.com/client9/misspell/cmd/misspell"
     "mvdan.cc/unparam"
     "golang.org/x/tools/cmd/stringer"
-    "github.com/go-bindata/go-bindata/..."
+    "github.com/go-bindata/go-bindata/v3/..."
+    "mvdan.cc/gofumpt/..."
   )
 
   ## now loop through the above array

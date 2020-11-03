@@ -27,6 +27,7 @@ type report struct {
 func createHandler(writer http.ResponseWriter, request *http.Request) {
 	if err := request.ParseForm(); err != nil {
 		http.Error(writer, "failed to parse form", http.StatusBadRequest)
+
 		return
 	}
 
@@ -41,7 +42,6 @@ func createHandler(writer http.ResponseWriter, request *http.Request) {
 		Today:       today,
 		Impediments: impediments,
 	})
-
 	if err != nil {
 		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
 	}

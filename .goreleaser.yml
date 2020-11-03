@@ -17,7 +17,14 @@ builds:
     env:
       - CGO_ENABLED=0
     main: ./cmd/scrum-report
-    ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+    ldflags:
+    - -s -w
+    - -X main.version={{.Version}}
+    - -X main.commit={{.ShortCommit}}
+    - -X main.date={{.Date}}
+    - -X main.builtBy={{.Env.HOSTNAME}}
+    - -X main.goVersion={{.Env.GOVERSION}}
+    - -X main.committedBy={{.Env.COMMITTER_EMAIL}}
 
 dockers:
   # You can have multiple Docker images.

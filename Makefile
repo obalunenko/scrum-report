@@ -57,6 +57,7 @@ test-cover:
 	./scripts/coverage.sh
 .PHONY: test-cover
 
+## Add new version
 new-version: lint test compile
 	./scripts/version.sh
 .PHONY: new-version
@@ -71,6 +72,10 @@ imports:
 	./scripts/fix-imports.sh
 .PHONY: imports
 
+fumpt:
+	./scripts/fix-gofumpts.sh
+.PHONY: fumpt
+
 ## dependencies - fetch all dependencies for sripts
 dependencies:
 	./scripts/get-dependencies.sh
@@ -81,6 +86,7 @@ gomod:
 	./scripts/gomod.sh
 .PHONY: gomod
 
+## Vet project
 vet:
 	./scripts/vet.sh
 .PHONY: vet
@@ -109,6 +115,7 @@ docker-down-dev:
 
 .PHONY: docker-down
 
+## Recreate generated files
 generate:
 	./scripts/generate.sh
 .PHONY: generate

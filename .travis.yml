@@ -1,5 +1,5 @@
 language: go
-dist: trusty
+dist: xenial
 sudo: false
 install: true
 
@@ -22,7 +22,7 @@ jobs:
   include:
     - stage: Unit Tests, Metalinter, Sonar
       go:
-        - 1.14.x
+        - 1.15.x
       os:
         - linux
       before_script:
@@ -41,13 +41,18 @@ jobs:
 
     - stage: Build Application
       go:
-        - 1.14.x
+        - 1.15.x
       os:
         - linux
       go_import_path: github.com/oleg-balunenko/scrum-report
+      before_script:
+        - export GOVERSION=$(go version | awk '{print $3;}')
+        - export HOSTNAME=$(hostname)
+        - export COMMITTER_EMAIL="$(git log -1 $TRAVIS_COMMIT --pretty="%cE")"
       script:
         - echo "Build stage"
         - make compile
+
       after_success:
       deploy:
         skip_cleanup: true
