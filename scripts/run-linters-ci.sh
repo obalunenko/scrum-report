@@ -9,6 +9,5 @@ source "${SCRIPTS_DIR}"/linters.sh
 
 vet
 fmt
-go-lint
 go-group
 golangci-ci_execute
