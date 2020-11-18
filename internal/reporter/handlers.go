@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/oleg-balunenko/scrum-report/web"
+	"github.com/obalunenko/scrum-report/web"
 )
 
 var (

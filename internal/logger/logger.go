@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/oleg-balunenko/scrum-report/internal/config"
+	"github.com/obalunenko/scrum-report/internal/config"
 )
 
 // SetUp sets up logger logs level and format.

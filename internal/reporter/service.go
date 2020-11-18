@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/oleg-balunenko/scrum-report/internal/config"
+	"github.com/obalunenko/scrum-report/internal/config"
 )
 
 // route Define a HTTP route with given logical name, http method, route pattern and handler function.

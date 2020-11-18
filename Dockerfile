@@ -1,6 +1,6 @@
 FROM golang:1.14-alpine as build-container
 
-ENV PROJECT_DIR=${GOPATH}/src/github.com/oleg-balunenko/scrum-report
+ENV PROJECT_DIR=${GOPATH}/src/github.com/obalunenko/scrum-report
 
 RUN apk update && \
     apk upgrade && \

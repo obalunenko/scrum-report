@@ -44,7 +44,7 @@ jobs:
         - 1.15.x
       os:
         - linux
-      go_import_path: github.com/oleg-balunenko/scrum-report
+      go_import_path: github.com/obalunenko/scrum-report
       before_script:
         - export GOVERSION=$(go version | awk '{print $3;}')
         - export HOSTNAME=$(hostname)
