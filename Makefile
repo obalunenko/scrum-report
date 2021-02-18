@@ -68,14 +68,27 @@ release:
 	./scripts/release.sh
 .PHONY: release
 
-## Fix imports sorting
+## Release local snapshot
+release-local-snapshot:
+	${call colored, release is running...}
+	./scripts/local-snapshot-release.sh
+.PHONY: release-local-snapshot
+
+## Fix imports sorting.
 imports:
+	${call colored, fix-imports is running...}
 	./scripts/fix-imports.sh
 .PHONY: imports
 
-fumpt:
-	./scripts/fix-gofumpts.sh
-.PHONY: fumpt
+## Format code.
+fmt:
+	${call colored, fmt is running...}
+	./scripts/fmt.sh
+.PHONY: fmt
+
+## Format code and sort imports.
+format-project: fmt imports
+.PHONY: format-project
 
 ## fetch all dependencies for scripts
 install-tools:
