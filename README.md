@@ -58,8 +58,8 @@ Then open in browser page `localhost:8080` and start to us it
 
 #### Demo
 
-![first step](./docs/img1.png)
+![first step](.github/images/img1.png)
 
-![first step](./docs/img2.png)
+![first step](.github/images/img2.png)
 
-![first step](./docs/img3.png)
+![first step](.github/images/img3.png)
