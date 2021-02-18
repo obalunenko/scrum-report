@@ -24,8 +24,9 @@ help:
 
 
 ## Compile executable
-compile:
+compile: generate
 	./scripts/compile.sh
+.PHONY: compile
 
 ## lint project
 lint:
@@ -76,15 +77,23 @@ fumpt:
 	./scripts/fix-gofumpts.sh
 .PHONY: fumpt
 
-## dependencies - fetch all dependencies for sripts
-dependencies:
+## fetch all dependencies for scripts
+install-tools:
 	./scripts/get-dependencies.sh
-.PHONY: dependencies
+.PHONY: install-tools
 
-## Sync dependencies
-gomod:
-	./scripts/gomod.sh
-.PHONY: gomod
+## Sync vendor
+sync-vendor:
+	${call colored, gomod is running...}
+	./scripts/sync-vendor.sh
+.PHONY: sync-vendor
+
+## Update dependencies
+gomod-update:
+	${call colored, gomod is running...}
+	go get -u -v ./...
+	make sync-vendor
+.PHONY: gomod-update
 
 ## Vet project
 vet:
