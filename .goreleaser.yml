@@ -22,9 +22,7 @@ builds:
     - -X main.version={{.Version}}
     - -X main.commit={{.ShortCommit}}
     - -X main.date={{.Date}}
-    - -X main.builtBy={{.Env.HOSTNAME}}
     - -X main.goVersion={{.Env.GOVERSION}}
-    - -X main.committedBy={{.Env.COMMITTER_EMAIL}}
 
 dockers:
   # You can have multiple Docker images.
@@ -39,11 +37,8 @@ dockers:
     goarm: ''
 
     # Build IDs to gather the binaries from.
-    builds:
-      - service
-    # Name templates of the built binaries that should be used.
-    binaries:
-      - scrum-report
+    ids: ['service', 'scrum-report']
+ 
     image_templates:
       - "olegbalunenko/scrum-report:latest"
       - "olegbalunenko/scrum-report:{{ .Tag }}"
