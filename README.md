@@ -2,7 +2,9 @@
 
 
 [![GO](https://img.shields.io/github/go-mod/go-version/obalunenko/scrum-report)](https://golang.org/doc/devel/release.html)
-[![Build Status](https://travis-ci.com/obalunenko/scrum-report.svg?branch=master)](https://travis-ci.com/obalunenko/scrum-report)
+![Lint & Test & Build & Release](https://github.com/obalunenko/scrum-report/workflows/Lint%20&%20Test%20&%20Build%20&%20Release/badge.svg)
+![Lint](https://github.com/obalunenko/scrum-report/workflows/Lint/badge.svg)
+![Test & Build](https://github.com/obalunenko/scrum-report/workflows/Test%20&%20Build/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/obalunenko/scrum-report)](https://goreportcard.com/report/github.com/obalunenko/scrum-report)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
 [![Latest release artifacts](https://img.shields.io/github/v/release/obalunenko/scrum-report)](https://github.com/obalunenko/scrum-report/releases/latest)
