@@ -78,7 +78,7 @@ jobs:
           install-only: true
 
       - name: Run GoReleaser snapshot
-        if: success() && ${{ runner.os }}=='ubuntu-latest'
+        if: success() && runner.os == 'ubuntu-latest'
         run: |
           make release-local-snapshot
         env:
