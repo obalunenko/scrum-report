@@ -42,10 +42,6 @@ github.com/fatih/structtag
 github.com/fsnotify/fsnotify
 # github.com/fzipp/gocyclo v0.3.1
 github.com/fzipp/gocyclo
-# github.com/go-bindata/go-bindata/v3 v3.1.3
-## explicit
-github.com/go-bindata/go-bindata/v3
-github.com/go-bindata/go-bindata/v3/go-bindata
 # github.com/go-critic/go-critic v0.5.4
 github.com/go-critic/go-critic/checkers
 github.com/go-critic/go-critic/checkers/internal/astwalk
@@ -166,10 +162,6 @@ github.com/jgautheron/goconst
 github.com/jingyugao/rowserrcheck/passes/rowserr
 # github.com/jirfag/go-printf-func-name v0.0.0-20191110105641-45db9963cdd3
 github.com/jirfag/go-printf-func-name/pkg/analyzer
-# github.com/kisielk/errcheck v1.4.0
-## explicit
-github.com/kisielk/errcheck
-github.com/kisielk/errcheck/internal/errcheck
 # github.com/kisielk/gotool v1.0.0
 github.com/kisielk/gotool
 github.com/kisielk/gotool/internal/load
@@ -314,10 +306,6 @@ github.com/uudashr/gocognit
 ## explicit
 github.com/vasi-stripe/gogroup
 github.com/vasi-stripe/gogroup/cmd/gogroup
-# golang.org/x/lint v0.0.0-20200302205851-738671d3881b
-## explicit
-golang.org/x/lint
-golang.org/x/lint/golint
 # golang.org/x/mod v0.4.0
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/modfile
