@@ -2,12 +2,13 @@
 set -e
 
 # Get new tags from the remote
-git fetch --tags -f
+git fetch --tags
 
 # Get the latest tag name
+# shellcheck disable=SC2046
 latestTag=$(git describe --tags $(git rev-list --tags --max-count=1))
-echo ${latestTag}
+echo "${latestTag}"
 
 export GOVERSION=$(go version | awk '{print $3;}')
 
-goreleaser release --rm-dist
+goreleaser --snapshot --skip-publish --rm-dist

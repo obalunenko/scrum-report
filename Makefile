@@ -24,7 +24,7 @@ help:
 
 
 ## Compile executable
-compile: generate
+compile:
 	./scripts/compile.sh
 .PHONY: compile
 
@@ -123,11 +123,6 @@ docker-down-dev:
 	docker-compose -f ./dev.docker-compose.dev.yml down --volumes
 
 .PHONY: docker-down
-
-## Recreate generated files
-generate:
-	./scripts/generate.sh
-.PHONY: generate
 
 .DEFAULT_GOAL := test
 
