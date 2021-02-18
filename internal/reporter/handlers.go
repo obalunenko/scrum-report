@@ -7,15 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/obalunenko/scrum-report/web"
-)
-
-var (
-	homePageHTML = string(web.MustAsset("templates/index.html"))
-	homePageTmpl = template.Must(template.New("index").Parse(homePageHTML))
-
-	reportPageHTML = string(web.MustAsset("templates/report.html"))
-	reportPageTmpl = template.Must(template.New("report").Parse(reportPageHTML))
+	"github.com/obalunenko/scrum-report/internal/reporter/assets"
 )
 
 type report struct {
@@ -24,34 +16,44 @@ type report struct {
 	Impediments []string
 }
 
-func createHandler(writer http.ResponseWriter, request *http.Request) {
-	if err := request.ParseForm(); err != nil {
-		http.Error(writer, "failed to parse form", http.StatusBadRequest)
+func createHandler() http.HandlerFunc {
+	reportPageHTML := string(assets.MustAsset("report.gohtml"))
+	reportPageTmpl := template.Must(template.New("report").Parse(reportPageHTML))
 
-		return
-	}
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if err := request.ParseForm(); err != nil {
+			http.Error(writer, "failed to parse form", http.StatusBadRequest)
 
-	today := processFormValue(request.Form.Get("today"))
-	yesterday := processFormValue(request.Form.Get("yesterday"))
-	impediments := processFormValue(request.FormValue("impediments"))
+			return
+		}
 
-	writer.Header().Set("Content-Type", "text/html")
+		today := processFormValue(request.Form.Get("today"))
+		yesterday := processFormValue(request.Form.Get("yesterday"))
+		impediments := processFormValue(request.FormValue("impediments"))
 
-	err := reportPageTmpl.Execute(writer, report{
-		Yesterday:   yesterday,
-		Today:       today,
-		Impediments: impediments,
-	})
-	if err != nil {
-		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+		writer.Header().Set("Content-Type", "text/html")
+
+		err := reportPageTmpl.Execute(writer, report{
+			Yesterday:   yesterday,
+			Today:       today,
+			Impediments: impediments,
+		})
+		if err != nil {
+			http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+		}
 	}
 }
 
-func indexHandler(writer http.ResponseWriter, _ *http.Request) {
-	writer.Header().Set("Content-Type", "text/html")
+func indexHandler() http.HandlerFunc {
+	homePageHTML := string(assets.MustAsset("index.gohtml"))
+	homePageTmpl := template.Must(template.New("index").Parse(homePageHTML))
 
-	if err := homePageTmpl.Execute(writer, nil); err != nil {
-		http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+	return func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "text/html")
+
+		if err := homePageTmpl.Execute(writer, nil); err != nil {
+			http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+		}
 	}
 }
 

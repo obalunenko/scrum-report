@@ -27,18 +27,18 @@ func routes() []route {
 			description: "index",
 			method:      "GET",
 			path:        "/",
-			handlerFunc: indexHandler,
+			handlerFunc: indexHandler(),
 		},
 		{
 			description: "create report",
 			method:      "POST",
 			path:        "/report",
-			handlerFunc: createHandler,
+			handlerFunc: createHandler(),
 		},
 	}
 }
 
-// Service holds all data required by reporter.
+// Service holds all templates required by reporter.
 type Service struct {
 	config  config.Config
 	handler http.Handler
