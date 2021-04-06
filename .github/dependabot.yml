@@ -5,17 +5,27 @@ updates:
     schedule:
       interval: "daily"
     labels:
-      - "chore"
-      - "patch"
+      - "go dependencies"
+      - "deps"
     assignees:
       - "obalunenko"
+    reviewers:
+      - "obalunenko"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
   
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     labels:
-      - "chore"
-      - "patch"
+      - "github-actions"
+      - "deps"
     assignees:
       - "obalunenko"
+    reviewers:
+      - "obalunenko"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
