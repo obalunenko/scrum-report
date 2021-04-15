@@ -22,7 +22,7 @@ RUN mkdir /app
 RUN cp ./bin/scrum-report /app/scrum-report
 
 
-FROM alpine:3.11.3 as deployment-container
+FROM alpine:3.13.5 as deployment-container
 RUN apk add -U --no-cache ca-certificates
 
 
