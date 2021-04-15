@@ -18,10 +18,25 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     labels:
       - "github-actions"
       - "deps"
+    assignees:
+      - "obalunenko"
+    reviewers:
+      - "obalunenko"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+      
+  
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "dependencies"
     assignees:
       - "obalunenko"
     reviewers:
