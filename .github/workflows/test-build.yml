@@ -72,7 +72,7 @@ jobs:
           bash <(curl -s https://codecov.io/bash)
 
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v2.6.0
+        uses: goreleaser/goreleaser-action@v2.6.1
         with:
           version: latest
           install-only: true
