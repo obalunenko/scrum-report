@@ -1,4 +1,4 @@
-FROM golang:1.16.6-alpine as build-container
+FROM golang:1.16.7-alpine as build-container
 
 ENV PROJECT_DIR=${GOPATH}/src/github.com/obalunenko/scrum-report
 
