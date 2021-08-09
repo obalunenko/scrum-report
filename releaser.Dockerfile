@@ -1,4 +1,4 @@
-FROM alpine:3.14.0
+FROM alpine:3.14.1
 RUN apk add -U --no-cache ca-certificates
 
 RUN mkdir -p /data/input && \
