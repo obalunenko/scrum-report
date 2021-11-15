@@ -2,7 +2,7 @@ version: "3.7"
 services:
   logs:
     restart: unless-stopped
-    container_name: scrum-report-logs
+    container_name: scrum-report-logs-prod
     networks:
       - scrum_report_prod
     image: 'amir20/dozzle:v3.9.0'
@@ -25,7 +25,7 @@ services:
 
   scrum-report:
     restart: unless-stopped
-    container_name: scrum-report
+    container_name: scrum-report-prod
     networks:
       - scrum_report_prod
     image: 'scrum-report-prod:latest'

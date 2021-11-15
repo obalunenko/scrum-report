@@ -26,7 +26,7 @@ DOCKER_REPO="${DOCKER_REPO}"
 docker build --rm --no-cache \
     -t "${DOCKER_REPO}scrum-report-prod:${VERSION}" \
     -t "${DOCKER_REPO}scrum-report-prod:latest" \
-    -f "${REPO_ROOT}/build/docker/scrum-report-parser/Dockerfile" \
+    -f "${REPO_ROOT}/build/docker/scrum-report/Dockerfile" \
     --build-arg DOCKER_REPO="${DOCKER_REPO}" .
 
 echo "${SCRIPT_NAME} done."
