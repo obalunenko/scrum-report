@@ -1,0 +1,45 @@
+version: "3.7"
+services:
+  logs:
+    restart: unless-stopped
+    container_name: scrum-report-logs-prod
+    networks:
+      - scrum_report_prod
+    image: 'amir20/dozzle:v3.9.0'
+    environment:
+      DOZZLE_ADDR: ':9999'
+      DOZZLE_BASE: /
+      DOZZLE_LEVEL: debug
+      DOZZLE_TAILSIZE: 300
+      DOZZLE_USERNAME: ''
+      DOZZLE_PASSWORD: ''
+      DOZZLE_KEY: ''
+      DOZZLE_FILTER: ''
+      DOZZLE_NO_ANALYTICS: 'true'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    ports:
+      - '9999:9999'
+    expose:
+      - 9999
+
+  scrum-report:
+    restart: unless-stopped
+    container_name: scrum-report-prod
+    networks:
+      - scrum_report_prod
+    image: 'scrum-report-prod:latest'
+    environment:
+      SCRUM_REPORT_APP_PORT: "8080"
+      SCRUM_REPORT_APP_NAME: "scrum-report"
+      SCRUM_REPORT_LOG_LEVEL: "DEBUG"
+      SCRUM_REPORT_LOG_FORMAT: "text"
+      SCRUM_REPORT_LOG_SENTRY_DSN: ""
+      SCRUM_REPORT_LOG_SENTRY_TRACE_ENABLE: "false"
+      SCRUM_REPORT_LOG_SENTRY_TRACE_LEVEL: ""
+    ports:
+    - "8080:8080"
+
+networks:
+  scrum_report_prod:
+    driver: bridge

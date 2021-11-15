@@ -1,6 +1,12 @@
 NAME=scrum-report
 BIN_DIR=./bin
 
+SHELL := env DOCKER_REPO=$(DOCKER_REPO) $(SHELL)
+DOCKER_REPO?=olegbalunenko
+
+SHELL := env VERSION=$(VERSION) $(SHELL)
+VERSION ?= $(shell git describe --tags $(git rev-list --tags --max-count=1))
+
 TARGET_MAX_CHAR_NUM=20
 
 ## Show help
@@ -23,119 +29,231 @@ help:
 
 
 
-## Compile executable
-compile:
-	./scripts/compile.sh
-.PHONY: compile
+build: compile-scrum-report
+.PHONY: build
 
-## lint project
-lint:
-	./scripts/run-linters.sh
-.PHONY: lint
+compile-scrum-report:
+	./scripts/build/scrum-report.sh
+.PHONY: compile-scrum-report
 
-lint-ci:
-	./scripts/run-linters-ci.sh
-.PHONY: lint-ci
-
-
-## format markdown files in project
-pretty-markdown:
-	find . -name '*.md' -not -wholename './vendor/*' | xargs prettier --write
-.PHONY: pretty-markdown
-
-## Test all packages
-test:
-	./scripts/run-tests.sh
-.PHONY: test
-
-## Test all packages
-test-docker:
-	./scripts/run-tests-docker.sh
-.PHONY: test-docker
-
-## Test coverage
+## Test coverage report.
 test-cover:
-	./scripts/coverage.sh
+	./scripts/tests/coverage.sh
 .PHONY: test-cover
 
-## Add new version
-new-version: lint test compile
-	./scripts/version.sh
-.PHONY: new-version
+## Tests sonar report generate.
+test-sonar-report:
+	./scripts/tests/sonar-report.sh
+.PHONY: test-sonar-report
 
-## Release
-release:
-	./scripts/release.sh
-.PHONY: release
+## Open coverage report.
+open-cover-report: test-cover
+	./scripts/open-coverage-report.sh
+.PHONY: open-cover-report
 
-## Release local snapshot
-release-local-snapshot:
-	${call colored, release is running...}
-	./scripts/local-snapshot-release.sh
-.PHONY: release-local-snapshot
+update-readme-cover: build test-cover
+	./scripts/update-readme-coverage.sh
+.PHONY: update-readme-cover
+
+test:
+	./scripts/tests/run.sh
+.PHONY: test
+
+configure: sync-vendor
+
+sync-vendor:
+	./scripts/sync-vendor.sh
+.PHONY: sync-vendor
 
 ## Fix imports sorting.
 imports:
-	${call colored, fix-imports is running...}
-	./scripts/fix-imports.sh
+	./scripts/style/fix-imports.sh
 .PHONY: imports
 
-## Format code.
+## Format code with go fmt.
 fmt:
-	${call colored, fmt is running...}
-	./scripts/fmt.sh
+	./scripts/style/fmt.sh
 .PHONY: fmt
 
 ## Format code and sort imports.
 format-project: fmt imports
 .PHONY: format-project
 
-## fetch all dependencies for scripts
 install-tools:
-	./scripts/get-dependencies.sh
+	./scripts/install/vendored-tools.sh
 .PHONY: install-tools
 
-## Sync vendor
-sync-vendor:
-	${call colored, gomod is running...}
-	./scripts/sync-vendor.sh
-.PHONY: sync-vendor
-
-## Update dependencies
-gomod-update:
-	${call colored, gomod is running...}
-	go get -u -v ./...
-	make sync-vendor
-.PHONY: gomod-update
-
-## Vet project
+## vet project
 vet:
-	./scripts/vet.sh
+	./scripts/linting/run-vet.sh
 .PHONY: vet
 
-## Docker compose up
-docker-up:
-	docker-compose -f ./docker-compose.yml up --build -d
+## Run full linting
+lint-full:
+	./scripts/linting/run-linters.sh
+.PHONY: lint-full
 
-.PHONY: docker-up
+## Run linting for build pipeline
+lint-pipeline:
+	./scripts/linting/golangci-pipeline.sh
+.PHONY: lint-pipeline
 
-## Docker compose down
-docker-down:
-	docker-compose -f ./docker-compose.yml down --volumes
+## Run linting for sonar report
+lint-sonar:
+	./scripts/linting/golangci-sonar.sh
+.PHONY: lint-sonar
 
-.PHONY: docker-down
+## recreate all generated code and swagger documentation.
+codegen:
+	./scripts/codegen/go-generate.sh
+.PHONY: codegen
 
-## Docker compose up
-docker-up-dev:
-	docker-compose -f ./docker-compose.dev.yml up --build -d
+## recreate all generated code and swagger documentation and format code.
+generate: codegen format-project vet
+.PHONY: generate
 
-.PHONY: docker-up
+## Release
+release:
+	./scripts/release/release.sh
+.PHONY: release
 
-## Docker compose down
-docker-down-dev:
-	docker-compose -f ./dev.docker-compose.dev.yml down --volumes
+## Release local snapshot
+release-local-snapshot:
+	./scripts/release/local-snapshot-release.sh
+.PHONY: release-local-snapshot
 
-.PHONY: docker-down
+## Check goreleaser config.
+check-releaser:
+	./scripts/release/check.sh
+.PHONY: check-releaser
 
-.DEFAULT_GOAL := test
+## Issue new release.
+new-version: vet test build
+	./scripts/release/new-version.sh
+.PHONY: new-release
+
+
+
+######################################
+############### DOCKER ###############
+######################################
+
+################ PROD #################
+
+## Push all prod images to registry.
+docker-push-prod-images:
+	./scripts/docker/push-all-images-to-registry.sh ${DOCKER_REPO}
+.PHONY: docker-push-prod-images
+
+## Build docker base images.
+docker-build-base-prod: docker-build-base-go-prod
+.PHONY: docker-build-base-prod
+
+## Build docker base image for GO
+docker-build-base-go-prod:
+	./scripts/docker/build/prod/go-base.sh
+.PHONY: docker-build-base-go-prod
+
+## Build all services docker prod images for deploying to gcloud.
+docker-build-prod: docker-build-backend-prod
+.PHONY: docker-build-prod
+
+## Build all backend services docker prod images for deploying to gcloud.
+docker-build-backend-prod: docker-build-scrum-report-prod
+.PHONY: docker-build-backend-prod
+
+## Build admin service prod docker image.
+docker-build-scrum-report-prod:
+	./scripts/docker/build/prod/scrum-report.sh
+.PHONY: docker-build-scrum-report-prod
+
+## Docker compose up - deploys prod containers on docker locally.
+docker-compose-up:
+	./scripts/docker/compose/prod/up.sh
+.PHONY: docker-compose-up
+
+## Docker compose down - remove all prod containers in docker locally.
+docker-compose-down:
+	./scripts/docker/compose/prod/down.sh
+.PHONY: docker-compose-down
+
+## Docker compose stop - stops all prod containers in docker locally.
+docker-compose-stop:
+	./scripts/docker/compose/prod/stop.sh
+.PHONY: docker-compose-stop
+
+## Build all prod images: base and services.
+docker-prepare-images-prod: docker-build-base-prod docker-build-prod
+.PHONY: docker-prepare-images-prod
+
+## Prod local full deploy: build base images, build services images, deploy to docker compose
+deploy-local-prod: docker-prepare-images-prod run-local-prod
+.PHONY: deploy-local-prod
+
+## Run locally: deploy to docker compose and expose tunnels.
+run-local-prod: docker-compose-up
+.PHONY: run-local-prod
+
+## Stop the world and close tunnels.
+stop-local-prod: docker-compose-stop
+.PHONY: stop-local-prod
+
+################## DEV ###################
+
+## Build docker base images.
+docker-build-base-dev: docker-build-base-go-dev
+.PHONY: docker-build-base-dev
+
+## Build docker base image for GO
+docker-build-base-go-dev:
+	./scripts/docker/build/dev/go-base.sh
+.PHONY: docker-build-base-go-dev
+
+## Build docker dev image for running locally.
+docker-build-dev: docker-build-scrum-report-dev
+.PHONY: docker-build-dev
+
+## Build admin service dev docker image.
+docker-build-scrum-report-dev:
+	./scripts/docker/build/dev/scrum-report.sh
+.PHONY: docker-build-scrum-report-dev
+
+## Dev Docker-compose up with stubbed 3rd party dependencies.
+dev-docker-compose-up:
+	./scripts/docker/compose/dev/up.sh
+.PHONY: dev-docker-compose-up
+
+## Docker compose down.
+dev-docker-compose-down:
+	./scripts/docker/compose/dev/down.sh
+.PHONY: dev-docker-compose-down
+
+## Docker compose stop - stops all dev containers in docker locally.
+dev-docker-compose-stop:
+	./scripts/docker/compose/dev/stop.sh
+.PHONY: dev-docker-compose-stop
+
+## Dev local full deploy: build base images, build services images, deploy to docker compose
+deploy-local-dev: docker-build-base-dev docker-build-dev run-local-dev
+.PHONY: deploy-local-dev
+
+## Run locally dev: deploy to docker compose and expose tunnels.
+run-local-dev: dev-docker-compose-up
+.PHONY: run-local-dev
+
+## Stop the world and close tunnels.
+stop-local-dev: dev-docker-compose-stop
+.PHONY: stop-local-prod
+
+## Open containers logs service url.
+open-container-logs:
+	./scripts/browser-opener.sh -u 'http://localhost:9999/'
+.PHONY: open-container-logs
+
+## Opens url of web amin in browser.
+open-scrum-report:
+	./scripts/browser-opener.sh -u 'http://localhost.charlesproxy.com:8080/'
+.PHONY: open-scrum-report
+
+.DEFAULT_GOAL := help
 

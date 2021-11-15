@@ -1,0 +1,41 @@
+name: Dockerfiles [lint]
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - "*"
+    paths:
+      - "!**"
+      - "build/docker/**"
+      - "!build/docker/**.sh"
+      - ".github/workflows/dockerfiles.yml"
+
+jobs:
+  lint-dockerfiles:
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        dockerfile:
+          [
+            "./build/docker/base/go.Dockerfile",
+            "./build/docker/scrum-report/dev.Dockerfile",
+            "./build/docker/scrum-report/Dockerfile",
+            "./build/docker/scrum-report/releaser.Dockerfile",
+          ]
+    runs-on: "ubuntu-20.04"
+    name: Lint ${{ matrix.dockerfile }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+
+      - name: Lint
+        uses: hadolint/hadolint-action@v1.6.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
