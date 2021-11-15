@@ -20,7 +20,6 @@ var defaultRules = []lint.Rule{
 	&rule.ExportedRule{},
 	&rule.VarNamingRule{},
 	&rule.IndentErrorFlowRule{},
-	&rule.IfReturnRule{},
 	&rule.RangeRule{},
 	&rule.ErrorfRule{},
 	&rule.ErrorNamingRule{},
@@ -72,11 +71,16 @@ var allRules = append([]lint.Rule{
 	&rule.UnhandledErrorRule{},
 	&rule.CognitiveComplexityRule{},
 	&rule.StringOfIntRule{},
+	&rule.StringFormatRule{},
 	&rule.EarlyReturnRule{},
 	&rule.UnconditionalRecursionRule{},
 	&rule.IdenticalBranchesRule{},
 	&rule.DeferRule{},
 	&rule.UnexportedNamingRule{},
+	&rule.FunctionLength{},
+	&rule.NestedStructs{},
+	&rule.IfReturnRule{},
+	&rule.UselessBreak{},
 }, defaultRules...)
 
 var allFormatters = []lint.Formatter{
@@ -88,6 +92,7 @@ var allFormatters = []lint.Formatter{
 	&formatter.Unix{},
 	&formatter.Checkstyle{},
 	&formatter.Plain{},
+	&formatter.Sarif{},
 }
 
 func getFormatters() map[string]lint.Formatter {
@@ -98,7 +103,7 @@ func getFormatters() map[string]lint.Formatter {
 	return result
 }
 
-// GetLintingRules yields the linting rules activated in the configuration
+// GetLintingRules yields the linting rules that must be applied by the linter
 func GetLintingRules(config *lint.Config) ([]lint.Rule, error) {
 	rulesMap := map[string]lint.Rule{}
 	for _, r := range allRules {
@@ -106,11 +111,16 @@ func GetLintingRules(config *lint.Config) ([]lint.Rule, error) {
 	}
 
 	lintingRules := []lint.Rule{}
-	for name := range config.Rules {
+	for name, ruleConfig := range config.Rules {
 		rule, ok := rulesMap[name]
 		if !ok {
 			return nil, fmt.Errorf("cannot find rule: %s", name)
 		}
+
+		if ruleConfig.Disabled {
+			continue // skip disabled rules
+		}
+
 		lintingRules = append(lintingRules, rule)
 	}
 
@@ -131,9 +141,27 @@ func parseConfig(path string) (*lint.Config, error) {
 }
 
 func normalizeConfig(config *lint.Config) {
+	const defaultConfidence = 0.8
 	if config.Confidence == 0 {
-		config.Confidence = 0.8
+		config.Confidence = defaultConfidence
 	}
+
+	if len(config.Rules) == 0 {
+		config.Rules = map[string]lint.RuleConfig{}
+	}
+	if config.EnableAllRules {
+		// Add to the configuration all rules not yet present in it
+		for _, rule := range allRules {
+			ruleName := rule.Name()
+			_, alreadyInConf := config.Rules[ruleName]
+			if alreadyInConf {
+				continue
+			}
+			// Add the rule with an empty conf for
+			config.Rules[ruleName] = lint.RuleConfig{}
+		}
+	}
+
 	severity := config.Severity
 	if severity != "" {
 		for k, v := range config.Rules {

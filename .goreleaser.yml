@@ -3,6 +3,14 @@ release:
     owner: obalunenko
     name: scrum-report
 
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+  - GOPROXY=https://proxy.golang.org,direct
+before:
+  hooks:
+    - go mod verify
+
 builds:
   - id: service
     binary: scrum-report
@@ -12,17 +20,30 @@ builds:
       - linux
     goarch:
       - amd64
-      - 386
       - arm
-    env:
-      - CGO_ENABLED=0
     main: ./cmd/scrum-report
     ldflags:
-    - -s -w
-    - -X main.version={{.Version}}
-    - -X main.commit={{.ShortCommit}}
-    - -X main.date={{.Date}}
-    - -X main.goVersion={{.Env.GOVERSION}}
+      - "{{ .Env.GO_BUILD_LDFLAGS }}"
+
+universal_binaries:
+  -
+    # ID of the source build
+    #
+    # Defaults to the project name.
+    id: service
+
+    # Universal binary name template.
+    #
+    # You will want to change this if you have multiple builds!
+    #
+    # Defaults to '{{ .ProjectName }}'
+    name_template: 'spamassassin-parser'
+
+    # Whether to remove the previous single-arch binaries from the artifact list.
+    # If left as false, your end release might have both several macOS archives: amd64, arm64 and all.
+    #
+    # Defaults to false.
+    replace: true
 
 dockers:
   # You can have multiple Docker images.
@@ -38,7 +59,7 @@ dockers:
 
     # Build IDs to gather the binaries from.
     ids: ['service', 'scrum-report']
- 
+
     image_templates:
       - "olegbalunenko/scrum-report:latest"
       - "olegbalunenko/scrum-report:{{ .Tag }}"
@@ -51,8 +72,9 @@ dockers:
     skip_push: false
 
     # Path to the Dockerfile (from the project root).
-    dockerfile: releaser.Dockerfile
-
+    dockerfile: build/docker/scrum-report/releaser.Dockerfile
+    extra_files:
+      - build/docker/scrum-report/entrypoint.sh
 
     # If your Dockerfile copies files other than the binary itself,
     # you should list them here as well.
@@ -82,8 +104,10 @@ archives:
     files:
       - LICENSE
       - README.md
-      - docker-compose.yml
-      - env.example
+      - .env.example
+      - src: deployments/docker-compose/release/docker-compose.yml
+        dst: .
+        strip_parent: true
 
 checksum:
   name_template: "{{ .ProjectName }}-{{ .Version }}-checksums.txt"
@@ -99,5 +123,11 @@ changelog:
       - "^test:"
       - "^dev:"
       - "README"
+      - "^readme"
+      - "^scripts"
+      - "scripts:"
       - Merge pull request
       - Merge branch
+      - Rebase on master
+      - "^Makefile"
+      - "goreleaser"

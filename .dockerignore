@@ -1,0 +1,10 @@
+.golangci.yml
+.gitattributes
+.gitignore
+.goreleaser.yml
+deployments/
+sonar-project.properties
+dist/
+bin/
+coverage/
+.github/

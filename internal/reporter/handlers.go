@@ -1,11 +1,13 @@
 package reporter
 
 import (
+	"context"
+	"fmt"
 	"html/template"
 	"net/http"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	log "github.com/obalunenko/logger"
 
 	"github.com/obalunenko/scrum-report/internal/reporter/assets"
 )
@@ -16,7 +18,7 @@ type report struct {
 	Impediments []string
 }
 
-func createHandler() http.HandlerFunc {
+func createHandler(_ context.Context) http.HandlerFunc {
 	reportPageHTML := string(assets.MustAsset("report.gohtml"))
 	reportPageTmpl := template.Must(template.New("report").Parse(reportPageHTML))
 
@@ -40,11 +42,13 @@ func createHandler() http.HandlerFunc {
 		})
 		if err != nil {
 			http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+
+			return
 		}
 	}
 }
 
-func indexHandler() http.HandlerFunc {
+func indexHandler(_ context.Context) http.HandlerFunc {
 	homePageHTML := string(assets.MustAsset("index.gohtml"))
 	homePageTmpl := template.Must(template.New("index").Parse(homePageHTML))
 
@@ -53,6 +57,8 @@ func indexHandler() http.HandlerFunc {
 
 		if err := homePageTmpl.Execute(writer, nil); err != nil {
 			http.Error(writer, "failed to execute template", http.StatusInternalServerError)
+
+			return
 		}
 	}
 }
@@ -63,15 +69,18 @@ func optionsHandler(writer http.ResponseWriter, _ *http.Request) {
 }
 
 // loggerHandlerOld Log all HTTP requests to output in a proper format.
-func loggerHandler(inner http.Handler, name string) http.Handler {
+func loggerHandler(ctx context.Context, inner http.Handler, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+
 		inner.ServeHTTP(w, r)
-		log.Debugf("%s\t%s\t%s\t%s",
+
+		msg := fmt.Sprintf("%s\t%s\t%s\t%s",
 			r.Method,
 			r.RequestURI,
 			name,
-			time.Since(start),
-		)
+			time.Since(start))
+
+		log.Debug(ctx, msg)
 	})
 }

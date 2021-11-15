@@ -1,15 +1,16 @@
-# scrum-report
-
-
-[![GO](https://img.shields.io/github/go-mod/go-version/obalunenko/scrum-report)](https://golang.org/doc/devel/release.html)
-![Lint & Test & Build & Release](https://github.com/obalunenko/scrum-report/workflows/Lint%20&%20Test%20&%20Build%20&%20Release/badge.svg)
-![Lint](https://github.com/obalunenko/scrum-report/workflows/Lint/badge.svg)
-![Test & Build](https://github.com/obalunenko/scrum-report/workflows/Test%20&%20Build/badge.svg)
+![coverbadger-tag-do-not-edit](https://img.shields.io/badge/coverage-8.33%25-brightgreen?longCache=true&style=flat)
+[![GO](https://img.shields.io/github/go-mod/go-version/oleg-balunenko/scrum-report)](https://golang.org/doc/devel/release.html)
+[![Go [test,build,lint]](https://github.com/obalunenko/scrum-report/actions/workflows/test-build.yml/badge.svg)](https://github.com/obalunenko/scrum-report/actions/workflows/test-build.yml)
+[![Lint & Test & Build & Release](https://github.com/obalunenko/scrum-report/actions/workflows/release.yml/badge.svg)](https://github.com/obalunenko/scrum-report/actions/workflows/release.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/obalunenko/scrum-report)](https://goreportcard.com/report/github.com/obalunenko/scrum-report)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=obalunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=obalunenko_scrum-report)
+[![GoDoc](https://godoc.org/github.com/obalunenko/scrum-report?status.svg)](https://godoc.org/github.com/obalunenko/scrum-report)
 [![Latest release artifacts](https://img.shields.io/github/v/release/obalunenko/scrum-report)](https://github.com/obalunenko/scrum-report/releases/latest)
 [![Docker pulls](https://img.shields.io/docker/pulls/olegbalunenko/scrum-report)](https://hub.docker.com/r/olegbalunenko/scrum-report)
 [![License](https://img.shields.io/github/license/obalunenko/scrum-report)](/LICENSE)
+
+# scrum-report
+
 
 Daily stand up meeting scrum report generator in markdown format for slack
 
