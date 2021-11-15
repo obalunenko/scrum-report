@@ -66,6 +66,7 @@ func New(ctx context.Context, params Params) *Service {
 	handler := newRouter(ctx)
 
 	var wg sync.WaitGroup
+
 	wg.Add(1)
 
 	logWriter := log.FromContext(ctx).Writer()

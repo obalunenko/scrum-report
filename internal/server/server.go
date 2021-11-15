@@ -1,3 +1,4 @@
+// Package server provides functionality for building web server with graceful shutdown support.
 package server
 
 import (

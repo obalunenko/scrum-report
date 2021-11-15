@@ -12,6 +12,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+
 	config.Load()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -45,5 +46,4 @@ func main() {
 	<-svc.Run()
 
 	log.Info(ctx, "cmd: Exit")
-
 }
