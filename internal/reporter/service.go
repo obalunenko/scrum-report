@@ -42,6 +42,7 @@ func routes(ctx context.Context) []route {
 	}
 }
 
+// Service represents reporter service instance.
 type Service struct {
 	appServer *server.Server
 	wg        *sync.WaitGroup
@@ -52,6 +53,7 @@ type Service struct {
 	}
 }
 
+// Params holds Service create parameters.
 type Params struct {
 	AppName string
 	Port    string
@@ -68,7 +70,7 @@ func New(ctx context.Context, params Params) *Service {
 
 	logWriter := log.FromContext(ctx).Writer()
 
-	srv := server.NewServer(
+	srv := server.New(
 		ctx,
 		&wg,
 		params.AppName,
@@ -105,6 +107,7 @@ func New(ctx context.Context, params Params) *Service {
 	}
 }
 
+// Run runs Service and returns channel that will indicate when Service is finished execution.
 func (s *Service) Run() chan struct{} {
 	s.wg.Add(1)
 

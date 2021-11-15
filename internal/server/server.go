@@ -13,6 +13,7 @@ import (
 	"github.com/obalunenko/logger"
 )
 
+// Server represents server instance.
 type Server struct {
 	name    string
 	ctx     context.Context
@@ -21,9 +22,11 @@ type Server struct {
 	errChan chan error
 }
 
+// ShutdownFunc represents Server shutdown function that used for graceful shutdown.
 type ShutdownFunc func(wg *sync.WaitGroup, s *http.Server)
 
-func NewServer(ctx context.Context, wg *sync.WaitGroup, name string, port string, logWriter io.Writer,
+// New creates new Server instance.
+func New(ctx context.Context, wg *sync.WaitGroup, name string, port string, logWriter io.Writer,
 	handler http.Handler, shutdownFunc ShutdownFunc) *Server {
 	errLog := log.New(logWriter, fmt.Sprintf("%s: ", name), log.LstdFlags)
 
@@ -56,10 +59,12 @@ func NewServer(ctx context.Context, wg *sync.WaitGroup, name string, port string
 	}
 }
 
+// Errors returns errors channel.
 func (s *Server) Errors() <-chan error {
 	return s.errChan
 }
 
+// Run runs Server.
 func (s *Server) Run() {
 	go s.startServer()
 	go s.handleShutdown()
