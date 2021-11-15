@@ -1,6 +1,6 @@
 ![coverbadger-tag-do-not-edit](https://img.shields.io/badge/coverage-8.33%25-brightgreen?longCache=true&style=flat)
 [![GO](https://img.shields.io/github/go-mod/go-version/oleg-balunenko/scrum-report)](https://golang.org/doc/devel/release.html)
-[![Go [test,build,lint]](https://github.com/obalunenko/scrum-report/actions/workflows/test-build.yml/badge.svg)](https://github.com/obalunenko/scrum-report/actions/workflows/test-build.yml)
+[![Go [lint, test]](https://github.com/obalunenko/scrum-report/actions/workflows/go.yml/badge.svg)](https://github.com/obalunenko/scrum-report/actions/workflows/go.yml)
 [![Lint & Test & Build & Release](https://github.com/obalunenko/scrum-report/actions/workflows/release.yml/badge.svg)](https://github.com/obalunenko/scrum-report/actions/workflows/release.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/obalunenko/scrum-report)](https://goreportcard.com/report/github.com/obalunenko/scrum-report)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=oleg-balunenko_scrum-report&metric=alert_status)](https://sonarcloud.io/dashboard?id=oleg-balunenko_scrum-report)
