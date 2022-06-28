@@ -13,8 +13,8 @@ github.com/gorilla/handlers v1.5.1 h1:9lRY6j8DEeeBT10CvO9hGW0gmky0BprnvDI5vfhUHH
 github.com/gorilla/handlers v1.5.1/go.mod h1:t8XrUpc4KVXb7HGyJ4/cEnwQiaxrX/hz1Zv/4g96P1Q=
 github.com/gorilla/mux v1.8.0 h1:i40aqfkR1h2SlN9hojwV5ZA91wcXFOvkdNIeFDP5koI=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
-github.com/obalunenko/logger v0.4.0 h1:C4PlzRhKSLCNx74eQ9BFVBLJIIbOt0kTWAGagMXa7vs=
-github.com/obalunenko/logger v0.4.0/go.mod h1:18AGelpMPZ7R+mLv0fxfP5G/ettnNFoU47B+azlE/iw=
+github.com/obalunenko/logger v0.4.1 h1:eLA1eOYacO/FbwJZJ7MIn9+4ETDps6DGUtaEO1b6hlA=
+github.com/obalunenko/logger v0.4.1/go.mod h1:18AGelpMPZ7R+mLv0fxfP5G/ettnNFoU47B+azlE/iw=
 github.com/obalunenko/version v1.1.0 h1:yVua7OHnK3+MJpendeMmAlfzVmq7R1h8MO3Ufz7HEec=
 github.com/obalunenko/version v1.1.0/go.mod h1:Or267aCQxNcAtgOeWA7yOe/RqJS4XDaMfcFwk3ohbOg=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
