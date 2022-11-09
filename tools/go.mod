@@ -1,6 +1,6 @@
 module github.com/obalunenko/scrum-report/tools
 
-go 1.17
+go 1.19
 
 require (
 	github.com/axw/gocov v1.0.0
