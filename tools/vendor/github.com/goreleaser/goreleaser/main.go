@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"runtime/debug"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/goreleaser/goreleaser/cmd"
+	"github.com/muesli/termenv"
 )
 
 // nolint: gochecknoglobals
@@ -15,6 +18,13 @@ var (
 	date    = ""
 	builtBy = ""
 )
+
+func init() {
+	// enable colored output on github actions et al
+	if os.Getenv("CI") != "" {
+		lipgloss.SetColorProfile(termenv.TrueColor)
+	}
+}
 
 func main() {
 	cmd.Execute(
@@ -37,6 +47,7 @@ func buildVersion(version, commit, date, builtBy string) string {
 	if builtBy != "" {
 		result = fmt.Sprintf("%s\nbuilt by: %s", result, builtBy)
 	}
+	result = fmt.Sprintf("%s\ngoos: %s\ngoarch: %s", result, runtime.GOOS, runtime.GOARCH)
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" {
 		result = fmt.Sprintf("%s\nmodule version: %s, checksum: %s", result, info.Main.Version, info.Main.Sum)
 	}

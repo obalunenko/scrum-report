@@ -12,6 +12,7 @@ const (
 )
 
 // content holds our puzzles inputs content.
+//
 //go:embed templates/*
 var content embed.FS
 

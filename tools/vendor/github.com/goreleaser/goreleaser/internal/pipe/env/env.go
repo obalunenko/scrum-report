@@ -6,9 +6,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"strings"
 
-	"github.com/apex/log"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	"github.com/goreleaser/goreleaser/pkg/context"
 	homedir "github.com/mitchellh/go-homedir"
@@ -19,7 +21,13 @@ var ErrMissingToken = errors.New("missing GITHUB_TOKEN, GITLAB_TOKEN and GITEA_T
 
 // ErrMultipleTokens indicates that multiple tokens are defined. ATM only one of them if allowed.
 // See https://github.com/goreleaser/goreleaser/pull/809
-var ErrMultipleTokens = errors.New("multiple tokens defined. Only one is allowed")
+type ErrMultipleTokens struct {
+	tokens []string
+}
+
+func (e ErrMultipleTokens) Error() string {
+	return fmt.Sprintf("multiple tokens found, but only one is allowed: %s\n\nLearn more at https://goreleaser.com/errors/multiple-tokens\n", strings.Join(e.tokens, ", "))
+}
 
 // Pipe for env.
 type Pipe struct{}
@@ -61,18 +69,18 @@ func (Pipe) Run(ctx *context.Context) error {
 	gitlabToken, gitlabTokenErr := loadEnv("GITLAB_TOKEN", ctx.Config.EnvFiles.GitLabToken)
 	giteaToken, giteaTokenErr := loadEnv("GITEA_TOKEN", ctx.Config.EnvFiles.GiteaToken)
 
-	numOfTokens := 0
+	var tokens []string
 	if githubToken != "" {
-		numOfTokens++
+		tokens = append(tokens, "GITHUB_TOKEN")
 	}
 	if gitlabToken != "" {
-		numOfTokens++
+		tokens = append(tokens, "GITLAB_TOKEN")
 	}
 	if giteaToken != "" {
-		numOfTokens++
+		tokens = append(tokens, "GITEA_TOKEN")
 	}
-	if numOfTokens > 1 {
-		return ErrMultipleTokens
+	if len(tokens) > 1 {
+		return ErrMultipleTokens{tokens}
 	}
 
 	noTokens := githubToken == "" && gitlabToken == "" && giteaToken == ""
@@ -139,7 +147,7 @@ func loadEnv(env, path string) (string, error) {
 		return "", err
 	}
 	f, err := os.Open(path) // #nosec
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", nil
 	}
 	if err != nil {

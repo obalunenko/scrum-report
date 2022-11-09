@@ -1,35 +1,31 @@
 # gotestsum
 
-`gotestsum` runs tests using `go test --json`, prints formatted test output, and a summary of the test run.
+`gotestsum` runs tests using `go test -json`, prints formatted test output, and a summary of the test run.
 It is designed to work well for both local development, and for automation like CI.
-`gotest.tools/gotestsum/testjson` ([godoc](https://pkg.go.dev/gotest.tools/gotestsum/testjson)) is a library
-that can be used to read [`test2json`](https://golang.org/cmd/test2json/) output.
-
-See [documentation](#documentation).
 
 ## Install
 
 Download a binary from [releases](https://github.com/gotestyourself/gotestsum/releases), or build from
-source with `go get gotest.tools/gotestsum`.
+source with `go install gotest.tools/gotestsum@latest`. With `go` version before 1.17, use `go get gotest.tools/gotestsum`.
 
-## Demo
-A demonstration of three `--format` options.
+## Documentation
 
-![Demo](https://i.ibb.co/XZfhmXq/demo.gif)
-<br /><sup>[Source](https://github.com/gotestyourself/gotestsum/tree/readme-demo/scripts)</sup>
-
-## Documentation 
-
+**Core features**
 - [Output Format](#output-format) from compact to verbose, with color highlighting.
 - [Summary](#summary) of the test run.
-- [JUnit XML file](#junit-xml-output) for integration with CI systems.
-- [JSON file](#json-file-output) to capture the `test2json` output in a file.
-- [Post run commands](#post-run-command) may be used for desktop notification.
-- [Re-run failed tests](#re-running-failed-tests) to save time when dealing with flaky test suites.
 - [Add `go test` flags](#custom-go-test-command), or 
   [run a compiled test binary](#executing-a-compiled-test-binary).
-- [Find or skip slow tests](#finding-and-skipping-slow-tests) using `gotestsum tool slowest`.
-- [Run tests when a file is saved](#run-tests-when-a-file-is-saved).
+
+**CI and Automation**
+- [`--junitfile`](#junit-xml-output) - write a JUnit XML file for integration with CI systems.
+- [`--jsonfile`](#json-file-output) - write the `test2json` output in a file.
+- [`--rerun-fails`](#re-running-failed-tests) - run failed tests again to save time when dealing with flaky test suites.
+
+**Local Development**
+- [`--watch`](#run-tests-when-a-file-is-saved) - when a file is saved, run the tests for the package that includes the file.
+- [`--post-run-command`](#post-run-command) - run a command after the tests, can be used for desktop notification.
+- [`gotestsum tool slowest`](#finding-and-skipping-slow-tests) - find the slowest tests, also update slow tests to be skipepd with `-short`.
+
 
 ### Output Format
 
@@ -47,6 +43,13 @@ Commonly used formats (see `--help` for a full list):
 
 Have an idea for a new format?
 Please [share it on github](https://github.com/gotestyourself/gotestsum/issues/new)!
+
+#### Demo
+
+A demonstration of three `--format` options.
+
+![Demo](https://user-images.githubusercontent.com/442180/182284939-e08a0aa5-4504-4e30-9e88-207ef47f4537.gif)
+<br /><sup>[Source](https://github.com/gotestyourself/gotestsum/tree/readme-demo/scripts)</sup>
 
 ### Summary
 
@@ -112,7 +115,7 @@ warning.
 When the `--jsonfile` flag or `GOTESTSUM_JSONFILE` environment variable are set
 to a file path, `gotestsum` will write a line-delimited JSON file with all the
 [test2json](https://golang.org/cmd/test2json/#hdr-Output_Format)
-output that was written by `go test --json`. This file can be used to compare test
+output that was written by `go test -json`. This file can be used to compare test
 runs, or find flaky tests.
 
 ```
@@ -150,6 +153,15 @@ example `notify` command only works on macOS with
 
 ```
 gotestsum --post-run-command notify
+```
+
+**Example: command with flags**
+
+Possitional arguments or command line flags can be passed to the `--post-run-command` by
+quoting the whole command.
+
+```
+gotestsum --post-run-command "notify me --date"
 ```
 
 ### Re-running failed tests
@@ -193,7 +205,7 @@ how you specify args to `go test`:
 
 ### Custom `go test` command
 
-By default `gotestsum` runs tests using the command `go test --json ./...`. You
+By default `gotestsum` runs tests using the command `go test -json ./...`. You
 can change the command with positional arguments after a `--`. You can change just the
 test directory value (which defaults to `./...`) by setting the `TEST_DIRECTORY`
 environment variable.
@@ -225,12 +237,17 @@ stdout and stderr output:
 
 * The stdout produced by the script must only contain the `test2json` output, or
   `gotestsum` will fail. If it isn't possible to change the script to avoid
-  non-JSON output, you can use `--ignore-non-json-output-lines` to ignore
-  non-JSON lines and write them to `gotestsum`'s stderr instead.
+  non-JSON output, you can use `--ignore-non-json-output-lines` (added in version 1.7.0)
+  to ignore non-JSON lines and write them to `gotestsum`'s stderr instead.
 * Any stderr produced by the script will be considered an error (this behaviour
   is necessary because package build errors are only reported by writting to
   stderr, not the `test2json` stdout). Any stderr produced by tests is not
   considered an error (it will be in the `test2json` stdout).
+
+**Example: accept intput from stdin**
+```
+cat out.json | gotestsum --raw-command -- cat
+```
 
 **Example: run tests with profiling enabled**
 
@@ -276,7 +293,7 @@ output. `./binary.test` is the path to the compiled test binary. The `-test.v`
 must be included so that `go tool test2json` receives all the output.
 
 To execute a test binary without installing Go, see
-[running without go](./docs/running-without-go.md).
+[running without go](./.project/docs/running-without-go.md).
 
 
 ### Finding and skipping slow tests
@@ -331,18 +348,31 @@ tests for the package which contains the changed file. By default all
 directories with at least one file with a `.go` extension, under the current
 directory will be watched. Use the `--packages` flag to specify a different list.
 
+If `--watch` is used with a command line that includes the name of one or more
+packages as command line arguments (ex: `gotestsum --watch -- ./...` or
+`gotestsum --watch -- ./extrapkg`), the
+tests in those packages will also be run when any file changes.
+
 While in watch mode, pressing some keys will perform an action:
 
 * `r` will run tests for the previous event.
+  Added in version 1.6.1.
+* `u` will run tests for the previous event, with the `-update` flag added.
+  Many [golden](https://gotest.tools/v3/golden) packages use this flag to automatically
+  update expected values of tests.
+  Added in version 1.8.1.
 * `d` will run tests for the previous event using `dlv test`, allowing you to 
   debug a test failure using [delve]. A breakpoint will automatically be added at
   the first line of any tests which failed in the previous run. Additional
   breakpoints can be added with [`runtime.Breakpoint`](https://golang.org/pkg/runtime/#Breakpoint)
   or by using the delve command prompt.
+  Added in version 1.6.1.
 * `a` will run tests for all packages, by using `./...` as the package selector.
+  Added in version 1.7.0.
 * `l` will scan the directory list again, and if there are any new directories
   which contain a file with a `.go` extension, they will be added to the watch
   list.
+  Added in version 1.7.0.
 
 Note that [delve] must be installed in order to use debug (`d`).
 

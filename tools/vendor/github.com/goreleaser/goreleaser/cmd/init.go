@@ -1,10 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/apex/log"
-	"github.com/fatih/color"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/static"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +19,7 @@ func newInitCmd() *initCmd {
 	cmd := &cobra.Command{
 		Use:           "init",
 		Aliases:       []string{"i"},
-		Short:         "Generates a .goreleaser.yml file",
+		Short:         "Generates a .goreleaser.yaml file",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Args:          cobra.NoArgs,
@@ -30,7 +30,7 @@ func newInitCmd() *initCmd {
 			}
 			defer conf.Close()
 
-			log.Infof(color.New(color.Bold).Sprintf("Generating %s file", root.config))
+			log.Infof(boldStyle.Render(fmt.Sprintf("Generating %s file", root.config)))
 			if _, err := conf.WriteString(static.ExampleConfig); err != nil {
 				return err
 			}
@@ -49,7 +49,7 @@ func newInitCmd() *initCmd {
 		},
 	}
 
-	cmd.Flags().StringVarP(&root.config, "config", "f", ".goreleaser.yml", "Load configuration from file")
+	cmd.Flags().StringVarP(&root.config, "config", "f", ".goreleaser.yaml", "Load configuration from file")
 
 	root.cmd = cmd
 	return root

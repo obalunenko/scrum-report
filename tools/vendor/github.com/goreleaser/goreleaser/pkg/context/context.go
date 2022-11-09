@@ -7,8 +7,9 @@
 package context
 
 import (
-	ctx "context"
+	stdctx "context"
 	"os"
+	"runtime"
 	"strings"
 	"time"
 
@@ -20,11 +21,16 @@ import (
 type GitInfo struct {
 	Branch      string
 	CurrentTag  string
+	PreviousTag string
 	Commit      string
 	ShortCommit string
 	FullCommit  string
 	CommitDate  time.Time
 	URL         string
+	Summary     string
+	TagSubject  string
+	TagContents string
+	TagBody     string
 }
 
 // Env is the environment variables.
@@ -63,7 +69,7 @@ const (
 
 // Context carries along some data through the pipes.
 type Context struct {
-	ctx.Context
+	stdctx.Context
 	Config             config.Project
 	Env                Env
 	SkipTokenCheck     bool
@@ -88,11 +94,20 @@ type Context struct {
 	SkipAnnounce       bool
 	SkipSign           bool
 	SkipValidate       bool
+	SkipSBOMCataloging bool
+	SkipDocker         bool
+	SkipBefore         bool
 	RmDist             bool
 	PreRelease         bool
 	Deprecated         bool
 	Parallelism        int
 	Semver             Semver
+	Runtime            Runtime
+}
+
+type Runtime struct {
+	Goos   string
+	Goarch string
 }
 
 // Semver represents a semantic version.
@@ -106,17 +121,17 @@ type Semver struct {
 
 // New context.
 func New(config config.Project) *Context {
-	return Wrap(ctx.Background(), config)
+	return Wrap(stdctx.Background(), config)
 }
 
 // NewWithTimeout new context with the given timeout.
-func NewWithTimeout(config config.Project, timeout time.Duration) (*Context, ctx.CancelFunc) {
-	ctx, cancel := ctx.WithTimeout(ctx.Background(), timeout)
+func NewWithTimeout(config config.Project, timeout time.Duration) (*Context, stdctx.CancelFunc) {
+	ctx, cancel := stdctx.WithTimeout(stdctx.Background(), timeout) // nosem
 	return Wrap(ctx, config), cancel
 }
 
 // Wrap wraps an existing context.
-func Wrap(ctx ctx.Context, config config.Project) *Context {
+func Wrap(ctx stdctx.Context, config config.Project) *Context {
 	return &Context{
 		Context:     ctx,
 		Config:      config,
@@ -124,6 +139,10 @@ func Wrap(ctx ctx.Context, config config.Project) *Context {
 		Parallelism: 4,
 		Artifacts:   artifact.New(),
 		Date:        time.Now(),
+		Runtime: Runtime{
+			Goos:   runtime.GOOS,
+			Goarch: runtime.GOARCH,
+		},
 	}
 }
 
@@ -131,11 +150,11 @@ func Wrap(ctx ctx.Context, config config.Project) *Context {
 func ToEnv(env []string) Env {
 	r := Env{}
 	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		if len(p) != 2 || p[0] == "" {
+		k, v, ok := strings.Cut(e, "=")
+		if !ok || k == "" {
 			continue
 		}
-		r[p[0]] = p[1]
+		r[k] = v
 	}
 	return r
 }

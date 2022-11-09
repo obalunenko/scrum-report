@@ -31,6 +31,16 @@ Check the documentation at https://nfpm.goreleaser.com
 
 Thanks to the [fpm][] authors for fpm, which inspires nfpm a lot.
 
+## Community
+
+You have questions, need support and or just want to talk about GoReleaser/nFPM?
+
+Here are ways to get in touch with the GoReleaser community:
+
+[![Join Discord](https://img.shields.io/badge/Join_our_Discord_server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/RGEBtg8vQ6)
+[![Follow Twitter](https://img.shields.io/badge/follow_on_twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/goreleaser)
+[![GitHub Discussions](https://img.shields.io/badge/GITHUB_DISCUSSION-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/goreleaser/nfpm/discussions)
+
 ## Donate
 
 Donations are very much appreciated! You can donate/sponsor on the main
@@ -43,7 +53,4 @@ easy and will surely help the developers at least buy some ☕️ or 🍺!
 
 ---
 
-Would you like to fix something in the documentation? Feel free to open an [issue](https://github.com/goreleaser/nfpm/issues).
-
-[goreleaser]: https://goreleaser.com/#linux_packages.nfpm
 [fpm]: https://github.com/jordansissel/fpm

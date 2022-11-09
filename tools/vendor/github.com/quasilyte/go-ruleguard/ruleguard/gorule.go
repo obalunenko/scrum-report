@@ -6,9 +6,10 @@ import (
 	"go/types"
 	"regexp"
 
-	"github.com/quasilyte/go-ruleguard/internal/gogrep"
-	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
+	"github.com/quasilyte/gogrep"
+	"github.com/quasilyte/gogrep/nodetag"
 )
 
 type goRuleSet struct {
@@ -37,6 +38,7 @@ type goRule struct {
 	location   string
 	suggestion string
 	filter     matchFilter
+	do         *quasigo.Func
 }
 
 type matchFilterResult string
@@ -58,17 +60,26 @@ type filterParams struct {
 	imports  map[string]struct{}
 	env      *quasigo.EvalEnv
 
-	importer *goImporter
+	importer       *goImporter
+	gogrepSubState *gogrep.MatcherState
+	typematchState *typematch.MatcherState
 
 	match    matchData
 	nodePath *nodePath
 
-	nodeText func(n ast.Node) []byte
+	nodeText   func(n ast.Node) []byte
+	nodeString func(n ast.Node) string
 
 	deadcode bool
 
+	currentFunc *ast.FuncDecl
+
 	// varname is set only for custom filters before bytecode function is called.
 	varname string
+
+	// Both of these are Do() function related fields.
+	reportString  string
+	suggestString string
 }
 
 func (params *filterParams) subNode(name string) ast.Node {
@@ -89,13 +100,17 @@ func (params *filterParams) subExpr(name string) ast.Expr {
 }
 
 func (params *filterParams) typeofNode(n ast.Node) types.Type {
-	if e, ok := n.(ast.Expr); ok {
-		if typ := params.ctx.Types.TypeOf(e); typ != nil {
-			return typ
-		}
+	var e ast.Expr
+	switch n := n.(type) {
+	case ast.Expr:
+		e = n
+	case *ast.Field:
+		e = n.Type
 	}
-
-	return types.Typ[types.Invalid]
+	if typ := params.ctx.Types.TypeOf(e); typ != nil {
+		return typ
+	}
+	return invalidType
 }
 
 func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {

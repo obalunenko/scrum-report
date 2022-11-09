@@ -29,7 +29,6 @@ import (
 	"archive/tar"
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
@@ -37,7 +36,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/mail"
 	"os"
 	"path/filepath"
@@ -49,6 +47,7 @@ import (
 	"github.com/goreleaser/nfpm/v2"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	gzip "github.com/klauspost/pgzip"
 )
 
 const packagerName = "apk"
@@ -84,25 +83,27 @@ func ensureValidArch(info *nfpm.Info) *nfpm.Info {
 // nolint: gochecknoglobals
 var Default = &Apk{}
 
-// Apk is a apk packager implementation.
+// Apk is an apk packager implementation.
 type Apk struct{}
 
 func (a *Apk) ConventionalFileName(info *nfpm.Info) string {
 	info = ensureValidArch(info)
 	version := info.Version
+
+	if info.Prerelease != "" {
+		version += "" + info.Prerelease
+	}
+
 	if info.Release != "" {
 		version += "-" + info.Release
 	}
 
-	if info.Prerelease != "" {
-		version += "~" + info.Prerelease
-	}
-
-	if info.VersionMetadata != "" {
-		version += "+" + info.VersionMetadata
-	}
-
 	return fmt.Sprintf("%s_%s_%s.apk", info.Name, version, info.Arch)
+}
+
+// ConventionalExtension returns the file name conventionally used for Apk packages
+func (*Apk) ConventionalExtension() string {
+	return ".apk"
 }
 
 // Package writes a new apk package to the given writer using the given info.
@@ -174,11 +175,7 @@ func writeFile(tw *tar.Writer, header *tar.Header, file io.Reader) error {
 	}
 
 	_, err = io.Copy(tw, file)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type tarKind int
@@ -361,7 +358,7 @@ func newScriptInsideTarGz(out *tar.Writer, path, dest string) error {
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -414,8 +411,18 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			continue
 		}
 
+		if err := createTree(tw, file.Destination, created); err != nil {
+			return err
+		}
+
+		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
+
+		if created[normalizedName] {
+			return fmt.Errorf("duplicate directory: %q", normalizedName)
+		}
+
 		err = tw.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(strings.Trim(file.Destination, "/") + "/"),
+			Name:     normalizedName,
 			Mode:     int64(file.FileInfo.Mode),
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -427,7 +434,7 @@ func createFilesInsideTarGz(info *nfpm.Info, tw *tar.Writer, created map[string]
 			return err
 		}
 
-		created[strings.TrimPrefix(file.Destination, "/")] = true
+		created[normalizedName] = true
 	}
 
 	for _, file := range info.Contents {
@@ -471,7 +478,7 @@ func createSymlinkInsideTarGz(file *files.Content, out *tar.Writer) error {
 }
 
 func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error {
-	contents, err := ioutil.ReadFile(file.Source)
+	contents, err := os.ReadFile(file.Source)
 	if err != nil {
 		return err
 	}
@@ -483,7 +490,7 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	// tar.FileInfoHeader only uses file.Mode().Perm() which masks the mode with
 	// 0o777 which we don't want because we want to be able to set the suid bit.
 	header.Mode = int64(file.Mode())
-	header.Name = files.ToNixPath(file.Destination[1:])
+	header.Name = normalizePath(file.Destination)
 	header.Uname = file.FileInfo.Owner
 	header.Gname = file.FileInfo.Group
 	if err = newItemInsideTarGz(tw, contents, header); err != nil {
@@ -494,20 +501,30 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, sizep *int64) error
 	return nil
 }
 
+// normalizePath returns a path separated by slashes without a leading slash.
+func normalizePath(src string) string {
+	return files.ToNixPath(strings.TrimLeft(src, "/"))
+}
+
 // this is needed because the data.tar.gz file should have the empty folders
 // as well, so we walk through the dst and create all subfolders.
 func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 	for _, path := range pathsToCreate(dst) {
+		path = normalizePath(path) + "/"
+
 		if created[path] {
 			// skipping dir that was previously created inside the archive
 			// (eg: usr/)
 			continue
 		}
+
 		if err := tarw.WriteHeader(&tar.Header{
-			Name:     files.ToNixPath(path + "/"),
+			Name:     path,
 			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
+			Uname:    "root",
+			Gname:    "root",
 		}); err != nil {
 			return fmt.Errorf("failed to create folder %s: %w", path, err)
 		}
@@ -539,10 +556,9 @@ func pathsToCreate(dst string) []string {
 const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 pkgname = {{.Info.Name}}
-pkgver = {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
+pkgver = {{.Info.Version}}
+		 {{- if .Info.Prerelease}}{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
-         {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
-         {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
 arch = {{.Info.Arch}}
 size = {{.InstalledSize}}
 pkgdesc = {{multiline .Info.Description}}

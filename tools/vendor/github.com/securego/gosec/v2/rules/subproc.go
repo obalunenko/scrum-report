@@ -55,6 +55,10 @@ func (r *subprocess) Match(n ast.Node, c *gosec.Context) (*gosec.Issue, error) {
 				// .. indeed it is a variable then processing is different than a normal
 				// field assignment
 				if variable {
+					// skip the check when the declaration is not available
+					if ident.Obj == nil {
+						continue
+					}
 					switch ident.Obj.Decl.(type) {
 					case *ast.AssignStmt:
 						_, assignment := ident.Obj.Decl.(*ast.AssignStmt)
@@ -70,6 +74,13 @@ func (r *subprocess) Match(n ast.Node, c *gosec.Context) (*gosec.Issue, error) {
 							vv, vvok := obj.(*types.Var)
 
 							if vvok && vv.Parent().Lookup(ident.Name) == nil {
+								return gosec.NewIssue(c, n, r.ID(), "Subprocess launched with variable", gosec.Medium, gosec.High), nil
+							}
+						}
+					case *ast.ValueSpec:
+						_, valueSpec := ident.Obj.Decl.(*ast.ValueSpec)
+						if variable && valueSpec {
+							if !gosec.TryResolve(ident, c) {
 								return gosec.NewIssue(c, n, r.ID(), "Subprocess launched with variable", gosec.Medium, gosec.High), nil
 							}
 						}

@@ -4,7 +4,7 @@ package announce
 import (
 	"fmt"
 
-	"github.com/apex/log"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/middleware/errhandler"
 	"github.com/goreleaser/goreleaser/internal/middleware/logging"
 	"github.com/goreleaser/goreleaser/internal/middleware/skip"
@@ -17,6 +17,7 @@ import (
 	"github.com/goreleaser/goreleaser/internal/pipe/teams"
 	"github.com/goreleaser/goreleaser/internal/pipe/telegram"
 	"github.com/goreleaser/goreleaser/internal/pipe/twitter"
+	"github.com/goreleaser/goreleaser/internal/pipe/webhook"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	"github.com/goreleaser/goreleaser/pkg/context"
 )
@@ -24,7 +25,6 @@ import (
 // Announcer should be implemented by pipes that want to announce releases.
 type Announcer interface {
 	fmt.Stringer
-
 	Announce(ctx *context.Context) error
 }
 
@@ -40,6 +40,7 @@ var announcers = []Announcer{
 	teams.Pipe{},
 	telegram.Pipe{},
 	twitter.Pipe{},
+	webhook.Pipe{},
 }
 
 // Pipe that announces releases.
@@ -68,10 +69,9 @@ func (Pipe) Run(ctx *context.Context) error {
 	for _, announcer := range announcers {
 		if err := skip.Maybe(
 			announcer,
-			logging.Log(
+			logging.PadLog(
 				announcer.String(),
 				errhandler.Handle(announcer.Announce),
-				logging.ExtraPadding,
 			),
 		)(ctx); err != nil {
 			return fmt.Errorf("%s: failed to announce release: %w", announcer.String(), err)

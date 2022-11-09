@@ -4,6 +4,7 @@ package kms
 
 import (
 	"context"
+	"fmt"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
@@ -13,29 +14,29 @@ import (
 
 // Gets information about custom key stores
 // (https://docs.aws.amazon.com/kms/latest/developerguide/custom-key-store-overview.html)
-// in the account and Region. This operation is part of the Custom Key Store
+// in the account and Region. This operation is part of the custom key store
 // feature
 // (https://docs.aws.amazon.com/kms/latest/developerguide/custom-key-store-overview.html)
-// feature in AWS KMS, which combines the convenience and extensive integration of
-// AWS KMS with the isolation and control of a single-tenant key store. By default,
-// this operation returns information about all custom key stores in the account
-// and Region. To get only information about a particular custom key store, use
-// either the CustomKeyStoreName or CustomKeyStoreId parameter (but not both). To
-// determine whether the custom key store is connected to its AWS CloudHSM cluster,
-// use the ConnectionState element in the response. If an attempt to connect the
-// custom key store failed, the ConnectionState value is FAILED and the
+// feature in KMS, which combines the convenience and extensive integration of KMS
+// with the isolation and control of a single-tenant key store. By default, this
+// operation returns information about all custom key stores in the account and
+// Region. To get only information about a particular custom key store, use either
+// the CustomKeyStoreName or CustomKeyStoreId parameter (but not both). To
+// determine whether the custom key store is connected to its CloudHSM cluster, use
+// the ConnectionState element in the response. If an attempt to connect the custom
+// key store failed, the ConnectionState value is FAILED and the
 // ConnectionErrorCode element in the response indicates the cause of the failure.
 // For help interpreting the ConnectionErrorCode, see CustomKeyStoresListEntry.
 // Custom key stores have a DISCONNECTED connection state if the key store has
 // never been connected or you use the DisconnectCustomKeyStore operation to
 // disconnect it. If your custom key store state is CONNECTED but you are having
-// trouble using it, make sure that its associated AWS CloudHSM cluster is active
-// and contains the minimum number of HSMs required for the operation, if any. For
-// help repairing your custom key store, see the Troubleshooting Custom Key Stores
+// trouble using it, make sure that its associated CloudHSM cluster is active and
+// contains the minimum number of HSMs required for the operation, if any. For help
+// repairing your custom key store, see the Troubleshooting Custom Key Stores
 // (https://docs.aws.amazon.com/kms/latest/developerguide/fix-keystore.html) topic
-// in the AWS Key Management Service Developer Guide. Cross-account use: No. You
-// cannot perform this operation on a custom key store in a different AWS account.
-// Required permissions: kms:DescribeCustomKeyStores
+// in the Key Management Service Developer Guide. Cross-account use: No. You cannot
+// perform this operation on a custom key store in a different Amazon Web Services
+// account. Required permissions: kms:DescribeCustomKeyStores
 // (https://docs.aws.amazon.com/kms/latest/developerguide/kms-api-permissions-reference.html)
 // (IAM policy) Related operations:
 //
@@ -82,8 +83,8 @@ type DescribeCustomKeyStoresInput struct {
 	CustomKeyStoreName *string
 
 	// Use this parameter to specify the maximum number of items to return. When this
-	// value is present, AWS KMS does not return more than the specified number of
-	// items, but it might return fewer.
+	// value is present, KMS does not return more than the specified number of items,
+	// but it might return fewer.
 	Limit *int32
 
 	// Use this parameter in a subsequent request after you receive a response with
@@ -173,6 +174,100 @@ func (c *Client) addOperationDescribeCustomKeyStoresMiddlewares(stack *middlewar
 		return err
 	}
 	return nil
+}
+
+// DescribeCustomKeyStoresAPIClient is a client that implements the
+// DescribeCustomKeyStores operation.
+type DescribeCustomKeyStoresAPIClient interface {
+	DescribeCustomKeyStores(context.Context, *DescribeCustomKeyStoresInput, ...func(*Options)) (*DescribeCustomKeyStoresOutput, error)
+}
+
+var _ DescribeCustomKeyStoresAPIClient = (*Client)(nil)
+
+// DescribeCustomKeyStoresPaginatorOptions is the paginator options for
+// DescribeCustomKeyStores
+type DescribeCustomKeyStoresPaginatorOptions struct {
+	// Use this parameter to specify the maximum number of items to return. When this
+	// value is present, KMS does not return more than the specified number of items,
+	// but it might return fewer.
+	Limit int32
+
+	// Set to true if pagination should stop if the service returns a pagination token
+	// that matches the most recent token provided to the service.
+	StopOnDuplicateToken bool
+}
+
+// DescribeCustomKeyStoresPaginator is a paginator for DescribeCustomKeyStores
+type DescribeCustomKeyStoresPaginator struct {
+	options   DescribeCustomKeyStoresPaginatorOptions
+	client    DescribeCustomKeyStoresAPIClient
+	params    *DescribeCustomKeyStoresInput
+	nextToken *string
+	firstPage bool
+}
+
+// NewDescribeCustomKeyStoresPaginator returns a new
+// DescribeCustomKeyStoresPaginator
+func NewDescribeCustomKeyStoresPaginator(client DescribeCustomKeyStoresAPIClient, params *DescribeCustomKeyStoresInput, optFns ...func(*DescribeCustomKeyStoresPaginatorOptions)) *DescribeCustomKeyStoresPaginator {
+	if params == nil {
+		params = &DescribeCustomKeyStoresInput{}
+	}
+
+	options := DescribeCustomKeyStoresPaginatorOptions{}
+	if params.Limit != nil {
+		options.Limit = *params.Limit
+	}
+
+	for _, fn := range optFns {
+		fn(&options)
+	}
+
+	return &DescribeCustomKeyStoresPaginator{
+		options:   options,
+		client:    client,
+		params:    params,
+		firstPage: true,
+		nextToken: params.Marker,
+	}
+}
+
+// HasMorePages returns a boolean indicating whether more pages are available
+func (p *DescribeCustomKeyStoresPaginator) HasMorePages() bool {
+	return p.firstPage || (p.nextToken != nil && len(*p.nextToken) != 0)
+}
+
+// NextPage retrieves the next DescribeCustomKeyStores page.
+func (p *DescribeCustomKeyStoresPaginator) NextPage(ctx context.Context, optFns ...func(*Options)) (*DescribeCustomKeyStoresOutput, error) {
+	if !p.HasMorePages() {
+		return nil, fmt.Errorf("no more pages available")
+	}
+
+	params := *p.params
+	params.Marker = p.nextToken
+
+	var limit *int32
+	if p.options.Limit > 0 {
+		limit = &p.options.Limit
+	}
+	params.Limit = limit
+
+	result, err := p.client.DescribeCustomKeyStores(ctx, &params, optFns...)
+	if err != nil {
+		return nil, err
+	}
+	p.firstPage = false
+
+	prevToken := p.nextToken
+	p.nextToken = result.NextMarker
+
+	if p.options.StopOnDuplicateToken &&
+		prevToken != nil &&
+		p.nextToken != nil &&
+		*prevToken == *p.nextToken {
+		p.nextToken = nil
+	}
+
+	return result, nil
 }
 
 func newServiceMetadataMiddleware_opDescribeCustomKeyStores(region string) *awsmiddleware.RegisterServiceMetadata {

@@ -3,10 +3,10 @@ package logext
 import (
 	"bytes"
 	"io"
+	"os"
 	"strings"
 
-	"github.com/apex/log"
-	"github.com/apex/log/handlers/cli"
+	"github.com/caarlos0/log"
 )
 
 // Output type of the log output.
@@ -22,7 +22,12 @@ const (
 
 // NewWriter creates a new log writer.
 func NewWriter(fields log.Fields, out Output) io.Writer {
-	if isDebug() {
+	return NewConditionalWriter(fields, out, false)
+}
+
+// NewConditionalWriter creates a new log writer that only writes when the given condition is met or debug is enabled.
+func NewConditionalWriter(fields log.Fields, out Output, condition bool) io.Writer {
+	if condition || isDebug() {
 		return logWriter{
 			ctx: newLogger(fields),
 			out: out,
@@ -42,18 +47,24 @@ func (w logWriter) Write(p []byte) (int, error) {
 		case Info:
 			w.ctx.Info(line)
 		case Error:
-			w.ctx.Error(line)
+			w.ctx.Warn(line)
 		}
 	}
 	return len(p), nil
 }
 
 func newLogger(fields log.Fields) *log.Entry {
-	handler := cli.New(cli.Default.Writer)
-	handler.Padding = cli.Default.Padding + 3
-	logger := log.WithFields(fields)
-	logger.Logger.Handler = handler
-	return logger
+	handler := log.New(currentWriter())
+	handler.IncreasePadding()
+	return handler.WithFields(fields)
+}
+
+func currentWriter() io.Writer {
+	logger, ok := log.Log.(*log.Logger)
+	if !ok {
+		return os.Stderr
+	}
+	return logger.Writer
 }
 
 func isDebug() bool {
