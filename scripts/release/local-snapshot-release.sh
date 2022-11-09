@@ -13,7 +13,7 @@ echo "${SCRIPT_NAME} is running... "
 
 checkInstalled 'goreleaser'
 
-APP=spamassassin-parser
+APP=scrum-report
 
 # Get new tags from the remote
 git fetch --tags -f

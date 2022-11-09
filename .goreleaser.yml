@@ -37,7 +37,7 @@ universal_binaries:
     # You will want to change this if you have multiple builds!
     #
     # Defaults to '{{ .ProjectName }}'
-    name_template: 'spamassassin-parser'
+    name_template: 'scrum-report'
 
     # Whether to remove the previous single-arch binaries from the artifact list.
     # If left as false, your end release might have both several macOS archives: amd64, arm64 and all.
