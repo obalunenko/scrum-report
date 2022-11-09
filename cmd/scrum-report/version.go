@@ -1,4 +1,4 @@
-// spamassassin-parser is a command line tool that shows how processing of reports works.
+// scrum-report is a command line tool that shows how processing of reports works.
 package main
 
 import (
