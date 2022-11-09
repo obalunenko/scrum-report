@@ -21,6 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
+	"strconv"
 	"time"
 )
 
@@ -74,6 +76,147 @@ const (
 // to store v and returns a pointer to it.
 func AccessLevel(v AccessLevelValue) *AccessLevelValue {
 	p := new(AccessLevelValue)
+	*p = v
+	return p
+}
+
+// UserIDValue represents a user ID value within GitLab.
+type UserIDValue string
+
+// List of available user ID values.
+const (
+	UserIDAny  UserIDValue = "Any"
+	UserIDNone UserIDValue = "None"
+)
+
+// ApproverIDsValue represents an approver ID value within GitLab.
+type ApproverIDsValue struct {
+	value interface{}
+}
+
+// ApproverIDs is a helper routine that creates a new ApproverIDsValue.
+func ApproverIDs(v interface{}) *ApproverIDsValue {
+	switch v.(type) {
+	case UserIDValue, []int:
+		return &ApproverIDsValue{value: v}
+	default:
+		panic("Unsupported value passed as approver ID")
+	}
+}
+
+// EncodeValues implements the query.Encoder interface
+func (a *ApproverIDsValue) EncodeValues(key string, v *url.Values) error {
+	switch value := a.value.(type) {
+	case UserIDValue:
+		v.Set(key, string(value))
+	case []int:
+		v.Del(key)
+		v.Del(key + "[]")
+		for _, id := range value {
+			v.Add(key+"[]", strconv.Itoa(id))
+		}
+	}
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface
+func (a ApproverIDsValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.value)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (a *ApproverIDsValue) UnmarshalJSON(bytes []byte) error {
+	return json.Unmarshal(bytes, a.value)
+}
+
+// AssigneeIDValue represents an assignee ID value within GitLab.
+type AssigneeIDValue struct {
+	value interface{}
+}
+
+// AssigneeID is a helper routine that creates a new AssigneeIDValue.
+func AssigneeID(v interface{}) *AssigneeIDValue {
+	switch v.(type) {
+	case UserIDValue, int:
+		return &AssigneeIDValue{value: v}
+	default:
+		panic("Unsupported value passed as assignee ID")
+	}
+}
+
+// EncodeValues implements the query.Encoder interface
+func (a *AssigneeIDValue) EncodeValues(key string, v *url.Values) error {
+	switch value := a.value.(type) {
+	case UserIDValue:
+		v.Set(key, string(value))
+	case int:
+		v.Set(key, strconv.Itoa(value))
+	}
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface
+func (a AssigneeIDValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.value)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (a *AssigneeIDValue) UnmarshalJSON(bytes []byte) error {
+	return json.Unmarshal(bytes, a.value)
+}
+
+// ReviewerIDValue represents a reviewer ID value within GitLab.
+type ReviewerIDValue struct {
+	value interface{}
+}
+
+// ReviewerID is a helper routine that creates a new ReviewerIDValue.
+func ReviewerID(v interface{}) *ReviewerIDValue {
+	switch v.(type) {
+	case UserIDValue, int:
+		return &ReviewerIDValue{value: v}
+	default:
+		panic("Unsupported value passed as reviewer ID")
+	}
+}
+
+// EncodeValues implements the query.Encoder interface
+func (a *ReviewerIDValue) EncodeValues(key string, v *url.Values) error {
+	switch value := a.value.(type) {
+	case UserIDValue:
+		v.Set(key, string(value))
+	case int:
+		v.Set(key, strconv.Itoa(value))
+	}
+	return nil
+}
+
+// MarshalJSON implements the json.Marshaler interface
+func (a ReviewerIDValue) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.value)
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (a *ReviewerIDValue) UnmarshalJSON(bytes []byte) error {
+	return json.Unmarshal(bytes, a.value)
+}
+
+// AvailabilityValue represents an availability value within GitLab.
+type AvailabilityValue string
+
+// List of available availability values.
+//
+// Undocummented, see code at:
+// https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/app/models/user_status.rb#L22
+const (
+	NotSet AvailabilityValue = "not_set"
+	Busy   AvailabilityValue = "busy"
+)
+
+// Availability is a helper routine that allocates a new AvailabilityValue
+// to store v and returns a pointer to it.
+func Availability(v AvailabilityValue) *AvailabilityValue {
+	p := new(AvailabilityValue)
 	*p = v
 	return p
 }
@@ -179,6 +322,39 @@ func FileAction(v FileActionValue) *FileActionValue {
 	return p
 }
 
+// GenericPackageSelectValue represents a generic package select value.
+type GenericPackageSelectValue string
+
+// The available generic package select values.
+const (
+	SelectPackageFile GenericPackageSelectValue = "package_file"
+)
+
+// GenericPackageSelect is a helper routine that allocates a new
+// GenericPackageSelectValue value to store v and returns a pointer to it.
+func GenericPackageSelect(v GenericPackageSelectValue) *GenericPackageSelectValue {
+	p := new(GenericPackageSelectValue)
+	*p = v
+	return p
+}
+
+// GenericPackageStatusValue represents a generic package status.
+type GenericPackageStatusValue string
+
+// The available generic package statuses.
+const (
+	PackageDefault GenericPackageStatusValue = "default"
+	PackageHidden  GenericPackageStatusValue = "hidden"
+)
+
+// GenericPackageStatus is a helper routine that allocates a new
+// GenericPackageStatusValue value to store v and returns a pointer to it.
+func GenericPackageStatus(v GenericPackageStatusValue) *GenericPackageStatusValue {
+	p := new(GenericPackageStatusValue)
+	*p = v
+	return p
+}
+
 // ISOTime represents an ISO 8601 formatted date
 type ISOTime time.Time
 
@@ -187,6 +363,10 @@ const iso8601 = "2006-01-02"
 
 // MarshalJSON implements the json.Marshaler interface
 func (t ISOTime) MarshalJSON() ([]byte, error) {
+	if reflect.ValueOf(t).IsZero() {
+		return []byte(`null`), nil
+	}
+
 	if y := time.Time(t).Year(); y < 0 || y >= 10000 {
 		// ISO 8901 uses 4 digits for the years
 		return nil, errors.New("json: ISOTime year outside of range [0,9999]")
@@ -258,6 +438,8 @@ type LicenseApprovalStatusValue string
 const (
 	LicenseApproved    LicenseApprovalStatusValue = "approved"
 	LicenseBlacklisted LicenseApprovalStatusValue = "blacklisted"
+	LicenseAllowed     LicenseApprovalStatusValue = "allowed"
+	LicenseDenied      LicenseApprovalStatusValue = "denied"
 )
 
 // LicenseApprovalStatus is a helper routine that allocates a new license
@@ -401,6 +583,31 @@ func ProjectCreationLevel(v ProjectCreationLevelValue) *ProjectCreationLevelValu
 	return p
 }
 
+// SharedRunnersSettingValue determines whether shared runners are enabled for a
+// group’s subgroups and projects.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/groups.html#options-for-shared_runners_setting
+type SharedRunnersSettingValue string
+
+// List of available shared runner setting levels.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/groups.html#options-for-shared_runners_setting
+const (
+	EnabledSharedRunnersSettingValue                  SharedRunnersSettingValue = "enabled"
+	DisabledWithOverrideSharedRunnersSettingValue     SharedRunnersSettingValue = "disabled_with_override"
+	DisabledAndUnoverridableSharedRunnersSettingValue SharedRunnersSettingValue = "disabled_and_unoverridable"
+)
+
+// SharedRunnersSetting is a helper routine that allocates a new SharedRunnersSettingValue
+// to store v and returns a pointer to it.
+func SharedRunnersSetting(v SharedRunnersSettingValue) *SharedRunnersSettingValue {
+	p := new(SharedRunnersSettingValue)
+	*p = v
+	return p
+}
+
 // SubGroupCreationLevelValue represents a sub group creation level within GitLab.
 //
 // GitLab API docs: https://docs.gitlab.com/ce/api/
@@ -419,6 +626,29 @@ const (
 func SubGroupCreationLevel(v SubGroupCreationLevelValue) *SubGroupCreationLevelValue {
 	p := new(SubGroupCreationLevelValue)
 	*p = v
+	return p
+}
+
+// SquashOptionValue represents a squash optional level within GitLab.
+//
+// GitLab API docs: https://docs.gitlab.com/ee/api/projects.html#create-project
+type SquashOptionValue string
+
+// List of available squash options.
+//
+// GitLab API docs: https://docs.gitlab.com/ee/api/projects.html#create-project
+const (
+	SquashOptionNever      SquashOptionValue = "never"
+	SquashOptionAlways     SquashOptionValue = "always"
+	SquashOptionDefaultOff SquashOptionValue = "default_off"
+	SquashOptionDefaultOn  SquashOptionValue = "default_on"
+)
+
+// SquashOption is a helper routine that allocates a new SquashOptionValue
+// to store s and returns a pointer to it.
+func SquashOption(s SquashOptionValue) *SquashOptionValue {
+	p := new(SquashOptionValue)
+	*p = s
 	return p
 }
 
@@ -453,6 +683,15 @@ const (
 	TodoTargetDesignManagement TodoTargetType = "DesignManagement::Design"
 	TodoTargetIssue            TodoTargetType = "Issue"
 	TodoTargetMergeRequest     TodoTargetType = "MergeRequest"
+)
+
+// UploadType represents the available upload types.
+type UploadType string
+
+// The available upload types.
+const (
+	UploadAvatar UploadType = "avatar"
+	UploadFile   UploadType = "file"
 )
 
 // VariableTypeValue represents a variable type within GitLab.
@@ -527,9 +766,8 @@ func Bool(v bool) *bool {
 	return p
 }
 
-// Int is a helper routine that allocates a new int32 value
-// to store v and returns a pointer to it, but unlike Int32
-// its argument value is an int.
+// Int is a helper routine that allocates a new int value
+// to store v and returns a pointer to it.
 func Int(v int) *int {
 	p := new(int)
 	*p = v

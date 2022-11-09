@@ -2,19 +2,18 @@ package main
 
 import (
 	"os"
-	"os/exec"
 
 	"gotest.tools/gotestsum/cmd"
 	"gotest.tools/gotestsum/cmd/tool"
-	"gotest.tools/gotestsum/log"
+	"gotest.tools/gotestsum/internal/log"
 )
 
 func main() {
 	err := route(os.Args)
-	switch err.(type) {
-	case nil:
+	switch {
+	case err == nil:
 		return
-	case *exec.ExitError:
+	case cmd.IsExitCoder(err):
 		// go test should already report the error to stderr, exit with
 		// the same status code
 		os.Exit(cmd.ExitCodeWithDefault(err))
@@ -28,6 +27,8 @@ func route(args []string) error {
 	name := args[0]
 	next, rest := cmd.Next(args[1:])
 	switch next {
+	case "help", "?":
+		return cmd.Run(name, []string{"--help"})
 	case "tool":
 		return tool.Run(name+" "+next, rest)
 	default:

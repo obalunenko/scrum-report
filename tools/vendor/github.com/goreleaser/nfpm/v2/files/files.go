@@ -8,26 +8,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/goreleaser/fileglob"
 	"github.com/goreleaser/nfpm/v2/internal/glob"
 )
 
 // Content describes the source and destination
 // of one file to copy into a package.
 type Content struct {
-	Source      string           `yaml:"src,omitempty"`
-	Destination string           `yaml:"dst,omitempty"`
-	Type        string           `yaml:"type,omitempty"`
-	Packager    string           `yaml:"packager,omitempty"`
-	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty"`
+	Source      string           `yaml:"src,omitempty" json:"src,omitempty"`
+	Destination string           `yaml:"dst,omitempty" json:"dst,omitempty"`
+	Type        string           `yaml:"type,omitempty" json:"type,omitempty"`
+	Packager    string           `yaml:"packager,omitempty" json:"packager,omitempty"`
+	FileInfo    *ContentFileInfo `yaml:"file_info,omitempty" json:"file_info,omitempty"`
 }
 
 type ContentFileInfo struct {
-	Owner string      `yaml:"owner,omitempty"`
-	Group string      `yaml:"group"`
-	Mode  os.FileMode `yaml:"mode,omitempty"`
-	MTime time.Time   `yaml:"mtime,omitempty"`
-	Size  int64       `yaml:"-"`
+	Owner string      `yaml:"owner,omitempty" json:"owner,omitempty"`
+	Group string      `yaml:"group,omitempty" json:"group,omitempty"`
+	Mode  os.FileMode `yaml:"mode,omitempty" json:"mode,omitempty"`
+	MTime time.Time   `yaml:"mtime,omitempty" json:"mtime,omitempty"`
+	Size  int64       `yaml:"-" json:"-"`
 }
 
 // Contents list of Content to process.
@@ -143,11 +142,6 @@ func (c *Content) Sys() interface{} {
 
 // ExpandContentGlobs gathers all of the real files to be copied into the package.
 func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents, err error) {
-	options := []fileglob.OptFunc{fileglob.MatchDirectoryIncludesContents}
-	if disableGlobbing {
-		options = append(options, fileglob.QuoteMeta)
-	}
-
 	for _, f := range contents {
 		var globbed map[string]string
 
@@ -157,7 +151,7 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 			// them because they do not really exist
 			files = append(files, f.WithFileInfoDefaults())
 		default:
-			globbed, err = glob.Glob(f.Source, f.Destination, options...)
+			globbed, err = glob.Glob(f.Source, f.Destination, disableGlobbing)
 			if err != nil {
 				return nil, err
 			}
@@ -183,15 +177,26 @@ func ExpandContentGlobs(contents Contents, disableGlobbing bool) (files Contents
 
 func appendGlobbedFiles(all Contents, globbed map[string]string, origFile *Content) (Contents, error) {
 	for src, dst := range globbed {
-		newFile := &Content{
+		// if the file has a FileInfo, we need to copy it but recalculate its size
+		newFileInfo := origFile.FileInfo
+		if newFileInfo != nil {
+			newFileInfoVal := *newFileInfo
+			newFileInfoVal.Size = 0
+			newFileInfo = &newFileInfoVal
+		}
+		newFile := (&Content{
 			Destination: ToNixPath(dst),
 			Source:      ToNixPath(src),
 			Type:        origFile.Type,
-			FileInfo:    origFile.FileInfo,
+			FileInfo:    newFileInfo,
 			Packager:    origFile.Packager,
+		}).WithFileInfoDefaults()
+		if dst, err := os.Readlink(src); err == nil {
+			newFile.Source = dst
+			newFile.Type = "symlink"
 		}
 
-		all = append(all, newFile.WithFileInfoDefaults())
+		all = append(all, newFile)
 	}
 
 	return all, nil
@@ -205,8 +210,13 @@ func checkNoCollisions(contents Contents) error {
 	for _, elem := range contents {
 		present, ok := alreadyPresent[elem.Destination]
 		if ok && (present.Packager == "" || elem.Packager == "" || present.Packager == elem.Packager) {
+			if elem.Type == "dir" {
+				return fmt.Errorf("cannot add directory %q because it is already present: %w",
+					elem.Destination, ErrContentCollision)
+			}
+
 			return fmt.Errorf(
-				"cannot add %s because %s is already present at the same destination (%s): %w",
+				"cannot add %q because %q is already present at the same destination (%s): %w",
 				elem.Source, present.Source, present.Destination, ErrContentCollision)
 		}
 

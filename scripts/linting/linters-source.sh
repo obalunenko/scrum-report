@@ -76,11 +76,11 @@ function go-lint() {
 }
 
 function go-group() {
-  echo "gogroup..."
+  echo "goimports..."
 
-  checkInstalled 'gogroup'
+  checkInstalled 'goimports'
 
-  declare -a lints=$(gogroup -order std,other,prefix=github.com/obalunenko/scrum-report/ $(find . -type f -name "*.go" | grep -v "vendor/"))
+  declare -a lints=$(goimports -l -local=$(go list -m) $(find . -type f -name "*.go" | grep -v "vendor/"))
 
   if [[ ${lints} ]]; then
     echo "fix it:"

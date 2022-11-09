@@ -13,8 +13,11 @@ import (
 )
 
 func runWatcher(opts *options) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	w := &watchRuns{opts: *opts}
-	return filewatcher.Watch(opts.packages, w.run)
+	return filewatcher.Watch(ctx, opts.packages, w.run)
 }
 
 type watchRuns struct {
@@ -34,16 +37,19 @@ func (w *watchRuns) run(event filewatcher.Event) error {
 			args:         w.opts.args,
 			initFilePath: path,
 		}
-		if err := runDelve(o); !isExitCoder(err) {
+		if err := runDelve(o); !IsExitCoder(err) {
 			return fmt.Errorf("delve failed: %w", err)
 		}
 		return nil
 	}
 
-	opts := w.opts
-	opts.packages = []string{event.PkgPath}
+	opts := w.opts // shallow copy opts
+	opts.packages = append([]string{}, opts.packages...)
+	opts.packages = append(opts.packages, event.PkgPath)
+	opts.packages = append(opts.packages, event.Args...)
+
 	var err error
-	if w.prevExec, err = runSingle(&opts); !isExitCoder(err) {
+	if w.prevExec, err = runSingle(&opts); !IsExitCoder(err) {
 		return err
 	}
 	return nil

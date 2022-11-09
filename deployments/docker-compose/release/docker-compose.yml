@@ -5,7 +5,7 @@ services:
     container_name: scrum-report-logs
     networks:
       - scrum_report
-    image: 'amir20/dozzle:v3.9.0'
+    image: 'amir20/dozzle:v4.4.1'
     environment:
       DOZZLE_ADDR: ':9999'
       DOZZLE_BASE: /

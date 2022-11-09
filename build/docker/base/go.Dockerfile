@@ -1,4 +1,4 @@
-FROM golang:1.17.3-alpine3.14
+FROM golang:1.19.3-alpine3.16
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="base"
@@ -8,29 +8,18 @@ RUN mkdir -p "${GOPATH}/src/${PROJECT_URL}/base-tools"
 
 WORKDIR "${GOPATH}/src/${PROJECT_URL}/base-tools"
 
-ARG APK_GIT_VERSION=~2
-ARG APK_NCURSES_VERSION=~6
-ARG APK_MAKE_VERSION=~4
-ARG APK_GCC_VERSION=~10
-ARG APK_BASH_VERSION=~5.1
-ARG APK_CURL_VERSION=~7
-ARG APK_MUSL_DEV_VERSION=~1
-ARG APK_UNZIP_VERSION=~6
-ARG APK_CA_CERTIFICATES_VERSION=20191127-r5
-ARG APK_LIBSTDC_VERSION=~10
-ARG APK_BINUTILS_VERSION=~2.35
 RUN apk update && \
     apk add --no-cache \
-        "git=${APK_GIT_VERSION}" \
-        "make=${APK_MAKE_VERSION}" \
-        "gcc=${APK_GCC_VERSION}" \
-        "bash=${APK_BASH_VERSION}" \
-        "curl=${APK_CURL_VERSION}" \
-        "musl-dev=${APK_MUSL_DEV_VERSION}" \
-        "unzip=${APK_UNZIP_VERSION}" \
-        "ca-certificates=${APK_CA_CERTIFICATES_VERSION}" \
-        "libstdc++=${APK_LIBSTDC_VERSION}" \
-        "binutils-gold=${APK_BINUTILS_VERSION}" && \
+        "git" \
+        "make" \
+        "gcc" \
+        "bash" \
+        "curl" \
+        "musl-dev" \
+        "unzip" \
+        "ca-certificates" \
+        "libstdc++" \
+        "binutils-gold" && \
     rm -rf /var/cache/apk/*
 
 # Get and install glibc for alpine

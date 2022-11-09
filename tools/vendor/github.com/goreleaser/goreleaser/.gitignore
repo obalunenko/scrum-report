@@ -11,3 +11,6 @@ www/docs/static/releases*.json
 completions/
 .vscode/
 .task/
+.idea/
+manpages
+output.json

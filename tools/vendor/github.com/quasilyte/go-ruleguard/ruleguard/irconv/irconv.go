@@ -10,9 +10,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-toolsmith/astcopy"
+	"golang.org/x/tools/go/ast/astutil"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 type Context struct {
@@ -52,13 +54,20 @@ type convError struct {
 	err error
 }
 
+type localMacroFunc struct {
+	name     string
+	params   []string
+	template ast.Expr
+}
+
 type converter struct {
 	types *types.Info
 	pkg   *types.Package
 	fset  *token.FileSet
 	src   []byte
 
-	group *ir.RuleGroup
+	group      *ir.RuleGroup
+	groupFuncs []localMacroFunc
 
 	dslPkgname string // The local name of the "ruleguard/dsl" package (usually its just "dsl")
 }
@@ -85,6 +94,12 @@ func (conv *converter) ConvertFile(f *ast.File) *ir.File {
 			if imp.Name != nil {
 				conv.dslPkgname = imp.Name.Name
 			}
+		}
+		// Right now this list is hardcoded from the knowledge of which
+		// stdlib packages are supported inside the bytecode.
+		switch importPath {
+		case "fmt", "strings", "strconv":
+			conv.addCustomImport(result, importPath)
 		}
 	}
 
@@ -152,6 +167,10 @@ func (conv *converter) convertInitFunc(dst *ir.File, decl *ast.FuncDecl) {
 	}
 }
 
+func (conv *converter) addCustomImport(dst *ir.File, pkgPath string) {
+	dst.CustomDecls = append(dst.CustomDecls, `import "`+pkgPath+`"`)
+}
+
 func (conv *converter) addCustomDecl(dst *ir.File, decl ast.Decl) {
 	begin := conv.fset.Position(decl.Pos())
 	end := conv.fset.Position(decl.End())
@@ -171,6 +190,7 @@ func (conv *converter) convertRuleGroup(decl *ast.FuncDecl) *ir.RuleGroup {
 		Line: conv.fset.Position(decl.Name.Pos()).Line,
 	}
 	conv.group = result
+	conv.groupFuncs = conv.groupFuncs[:0]
 
 	result.Name = decl.Name.String()
 	result.MatcherName = decl.Type.Params.List[0].Names[0].String()
@@ -181,6 +201,11 @@ func (conv *converter) convertRuleGroup(decl *ast.FuncDecl) *ir.RuleGroup {
 
 	seenRules := false
 	for _, stmt := range decl.Body.List {
+		if assign, ok := stmt.(*ast.AssignStmt); ok && assign.Tok == token.DEFINE {
+			conv.localDefine(assign)
+			continue
+		}
+
 		if _, ok := stmt.(*ast.DeclStmt); ok {
 			continue
 		}
@@ -206,6 +231,146 @@ func (conv *converter) convertRuleGroup(decl *ast.FuncDecl) *ir.RuleGroup {
 	}
 
 	return result
+}
+
+func (conv *converter) findLocalMacro(call *ast.CallExpr) *localMacroFunc {
+	fn, ok := call.Fun.(*ast.Ident)
+	if !ok {
+		return nil
+	}
+	for i := range conv.groupFuncs {
+		if conv.groupFuncs[i].name == fn.Name {
+			return &conv.groupFuncs[i]
+		}
+	}
+	return nil
+}
+
+func (conv *converter) expandMacro(macro *localMacroFunc, call *ast.CallExpr) ir.FilterExpr {
+	// Check that call args are OK.
+	// Since "function calls" are implemented as a macro expansion here,
+	// we don't allow arguments that have a non-trivial evaluation.
+	isSafe := func(arg ast.Expr) bool {
+		switch arg := astutil.Unparen(arg).(type) {
+		case *ast.BasicLit, *ast.Ident:
+			return true
+
+		case *ast.IndexExpr:
+			mapIdent, ok := astutil.Unparen(arg.X).(*ast.Ident)
+			if !ok {
+				return false
+			}
+			if mapIdent.Name != conv.group.MatcherName {
+				return false
+			}
+			key, ok := astutil.Unparen(arg.Index).(*ast.BasicLit)
+			if !ok || key.Kind != token.STRING {
+				return false
+			}
+			return true
+
+		default:
+			return false
+		}
+	}
+	args := map[string]ast.Expr{}
+	for i, arg := range call.Args {
+		paramName := macro.params[i]
+		if !isSafe(arg) {
+			panic(conv.errorf(arg, "unsupported/too complex %s argument", paramName))
+		}
+		args[paramName] = astutil.Unparen(arg)
+	}
+
+	body := astcopy.Expr(macro.template)
+	expanded := astutil.Apply(body, nil, func(cur *astutil.Cursor) bool {
+		if ident, ok := cur.Node().(*ast.Ident); ok {
+			arg, ok := args[ident.Name]
+			if ok {
+				cur.Replace(arg)
+				return true
+			}
+		}
+		// astcopy above will copy the AST tree, but it won't update
+		// the associated types.Info map of const values.
+		// We'll try to solve that issue at least partially here.
+		if lit, ok := cur.Node().(*ast.BasicLit); ok {
+			switch lit.Kind {
+			case token.STRING:
+				val, err := strconv.Unquote(lit.Value)
+				if err == nil {
+					conv.types.Types[lit] = types.TypeAndValue{
+						Type:  types.Typ[types.UntypedString],
+						Value: constant.MakeString(val),
+					}
+				}
+			case token.INT:
+				val, err := strconv.ParseInt(lit.Value, 0, 64)
+				if err == nil {
+					conv.types.Types[lit] = types.TypeAndValue{
+						Type:  types.Typ[types.UntypedInt],
+						Value: constant.MakeInt64(val),
+					}
+				}
+			case token.FLOAT:
+				val, err := strconv.ParseFloat(lit.Value, 64)
+				if err == nil {
+					conv.types.Types[lit] = types.TypeAndValue{
+						Type:  types.Typ[types.UntypedFloat],
+						Value: constant.MakeFloat64(val),
+					}
+				}
+			}
+		}
+		return true
+	})
+
+	return conv.convertFilterExpr(expanded.(ast.Expr))
+}
+
+func (conv *converter) localDefine(assign *ast.AssignStmt) {
+	if len(assign.Lhs) != 1 || len(assign.Rhs) != 1 {
+		panic(conv.errorf(assign, "multi-value := is not supported"))
+	}
+	lhs, ok := assign.Lhs[0].(*ast.Ident)
+	if !ok {
+		panic(conv.errorf(assign.Lhs[0], "only simple ident lhs is supported"))
+	}
+	rhs := assign.Rhs[0]
+	fn, ok := rhs.(*ast.FuncLit)
+	if !ok {
+		panic(conv.errorf(rhs, "only func literals are supported on the rhs"))
+	}
+	typ := conv.types.TypeOf(fn).(*types.Signature)
+	isBoolResult := typ.Results() != nil &&
+		typ.Results().Len() == 1 &&
+		typ.Results().At(0).Type() == types.Typ[types.Bool]
+	if !isBoolResult {
+		var loc ast.Node = fn.Type
+		if fn.Type.Results != nil {
+			loc = fn.Type.Results
+		}
+		panic(conv.errorf(loc, "only funcs returning bool are supported"))
+	}
+	if len(fn.Body.List) != 1 {
+		panic(conv.errorf(fn.Body, "only simple 1 return statement funcs are supported"))
+	}
+	stmt, ok := fn.Body.List[0].(*ast.ReturnStmt)
+	if !ok {
+		panic(conv.errorf(fn.Body.List[0], "expected a return statement, found %T", fn.Body.List[0]))
+	}
+	var params []string
+	for _, field := range fn.Type.Params.List {
+		for _, id := range field.Names {
+			params = append(params, id.Name)
+		}
+	}
+	macro := localMacroFunc{
+		name:     lhs.Name,
+		params:   params,
+		template: stmt.Results[0],
+	}
+	conv.groupFuncs = append(conv.groupFuncs, macro)
 }
 
 func (conv *converter) doMatcherImport(call *ast.CallExpr) {
@@ -281,6 +446,7 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 		suggestArgs      *[]ast.Expr
 		reportArgs       *[]ast.Expr
 		atArgs           *[]ast.Expr
+		doArgs           *[]ast.Expr
 	)
 
 	for {
@@ -320,6 +486,8 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 				panic(conv.errorf(chain.Sel, "Report() can't be repeated"))
 			}
 			reportArgs = &call.Args
+		case "Do":
+			doArgs = &call.Args
 		case "At":
 			if atArgs != nil {
 				panic(conv.errorf(chain.Sel, "At() can't be repeated"))
@@ -372,13 +540,27 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 		rule.SuggestTemplate = conv.parseStringArg((*suggestArgs)[0])
 	}
 
-	if suggestArgs == nil && reportArgs == nil {
-		panic(conv.errorf(origCall, "missing Report() or Suggest() call"))
+	if suggestArgs == nil && reportArgs == nil && doArgs == nil {
+		panic(conv.errorf(origCall, "missing Report(), Suggest() or Do() call"))
 	}
-	if reportArgs == nil {
-		rule.ReportTemplate = "suggestion: " + rule.SuggestTemplate
+	if doArgs != nil {
+		if suggestArgs != nil || reportArgs != nil {
+			panic(conv.errorf(origCall, "can't combine Report/Suggest with Do yet"))
+		}
+		if matchCommentArgs != nil {
+			panic(conv.errorf(origCall, "can't use Do() with MatchComment() yet"))
+		}
+		funcName, ok := (*doArgs)[0].(*ast.Ident)
+		if !ok {
+			panic(conv.errorf((*doArgs)[0], "only named function args are supported"))
+		}
+		rule.DoFuncName = funcName.String()
 	} else {
-		rule.ReportTemplate = conv.parseStringArg((*reportArgs)[0])
+		if reportArgs == nil {
+			rule.ReportTemplate = "suggestion: " + rule.SuggestTemplate
+		} else {
+			rule.ReportTemplate = conv.parseStringArg((*reportArgs)[0])
+		}
 	}
 
 	for i, alt := range alternatives {
@@ -481,6 +663,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarConstSliceOp, Value: op.varName}
 		case "Addressable":
 			return ir.FilterExpr{Op: ir.FilterVarAddressableOp, Value: op.varName}
+		case "Comparable":
+			return ir.FilterExpr{Op: ir.FilterVarComparableOp, Value: op.varName}
 		case "Type.Size":
 			return ir.FilterExpr{Op: ir.FilterVarTypeSizeOp, Value: op.varName}
 		}
@@ -507,6 +691,28 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 		case "File.Name.Matches":
 			return ir.FilterExpr{Op: ir.FilterFileNameMatchesOp, Value: conv.parseStringArg(e.Args[0])}
 
+		case "Contains":
+			pat := conv.parseStringArg(e.Args[0])
+			return ir.FilterExpr{
+				Op:    ir.FilterVarContainsOp,
+				Value: op.varName,
+				Args: []ir.FilterExpr{
+					{Op: ir.FilterStringOp, Value: pat},
+				},
+			}
+
+		case "Type.IdenticalTo":
+			// TODO: reuse the code with parsing At() args?
+			index, ok := e.Args[0].(*ast.IndexExpr)
+			if !ok {
+				panic(conv.errorf(e.Args[0], "expected %s[`varname`] expression", conv.group.MatcherName))
+			}
+			rhsVarname := conv.parseStringArg(index.Index)
+			args := []ir.FilterExpr{
+				{Op: ir.FilterStringOp, Value: rhsVarname},
+			}
+			return ir.FilterExpr{Op: ir.FilterVarTypeIdenticalToOp, Value: op.varName, Args: args}
+
 		case "Filter":
 			funcName, ok := e.Args[0].(*ast.Ident)
 			if !ok {
@@ -516,6 +722,10 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 				{Op: ir.FilterFilterFuncRefOp, Value: funcName.String()},
 			}
 			return ir.FilterExpr{Op: ir.FilterVarFilterOp, Value: op.varName, Args: args}
+		}
+
+		if macro := conv.findLocalMacro(e); macro != nil {
+			return conv.expandMacro(macro, e)
 		}
 
 		args := convertExprList(e.Args)
@@ -534,16 +744,32 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterRootNodeParentIsOp, Args: args}
 		case "Object.Is":
 			return ir.FilterExpr{Op: ir.FilterVarObjectIsOp, Value: op.varName, Args: args}
+		case "Object.IsGlobal":
+			return ir.FilterExpr{Op: ir.FilterVarObjectIsGlobalOp, Value: op.varName}
+		case "SinkType.Is":
+			if op.varName != "$$" {
+				// TODO: remove this restriction.
+				panic(conv.errorf(e.Args[0], "sink type is only implemented for $$ var"))
+			}
+			return ir.FilterExpr{Op: ir.FilterRootSinkTypeIsOp, Value: op.varName, Args: args}
+		case "Type.HasPointers":
+			return ir.FilterExpr{Op: ir.FilterVarTypeHasPointersOp, Value: op.varName}
 		case "Type.Is":
 			return ir.FilterExpr{Op: ir.FilterVarTypeIsOp, Value: op.varName, Args: args}
 		case "Type.Underlying.Is":
 			return ir.FilterExpr{Op: ir.FilterVarTypeUnderlyingIsOp, Value: op.varName, Args: args}
+		case "Type.OfKind":
+			return ir.FilterExpr{Op: ir.FilterVarTypeOfKindOp, Value: op.varName, Args: args}
+		case "Type.Underlying.OfKind":
+			return ir.FilterExpr{Op: ir.FilterVarTypeUnderlyingOfKindOp, Value: op.varName, Args: args}
 		case "Type.ConvertibleTo":
 			return ir.FilterExpr{Op: ir.FilterVarTypeConvertibleToOp, Value: op.varName, Args: args}
 		case "Type.AssignableTo":
 			return ir.FilterExpr{Op: ir.FilterVarTypeAssignableToOp, Value: op.varName, Args: args}
 		case "Type.Implements":
 			return ir.FilterExpr{Op: ir.FilterVarTypeImplementsOp, Value: op.varName, Args: args}
+		case "Type.HasMethod":
+			return ir.FilterExpr{Op: ir.FilterVarTypeHasMethodOp, Value: op.varName, Args: args}
 		}
 	}
 

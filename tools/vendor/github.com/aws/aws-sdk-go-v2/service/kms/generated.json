@@ -1,10 +1,13 @@
 {
     "dependencies": {
         "github.com/aws/aws-sdk-go-v2": "v1.4.0",
+        "github.com/aws/aws-sdk-go-v2/internal/configsources": "v0.0.0-00010101000000-000000000000",
+        "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2": "v2.0.0-00010101000000-000000000000",
         "github.com/aws/smithy-go": "v1.4.0"
     },
     "files": [
         "api_client.go",
+        "api_client_test.go",
         "api_op_CancelKeyDeletion.go",
         "api_op_ConnectCustomKeyStore.go",
         "api_op_CreateAlias.go",
@@ -27,6 +30,7 @@
         "api_op_GenerateDataKeyPair.go",
         "api_op_GenerateDataKeyPairWithoutPlaintext.go",
         "api_op_GenerateDataKeyWithoutPlaintext.go",
+        "api_op_GenerateMac.go",
         "api_op_GenerateRandom.go",
         "api_op_GetKeyPolicy.go",
         "api_op_GetKeyRotationStatus.go",
@@ -53,6 +57,7 @@
         "api_op_UpdateKeyDescription.go",
         "api_op_UpdatePrimaryRegion.go",
         "api_op_Verify.go",
+        "api_op_VerifyMac.go",
         "deserializers.go",
         "doc.go",
         "endpoints.go",

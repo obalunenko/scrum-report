@@ -4,12 +4,11 @@ package deb
 import (
 	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"crypto/md5" // nolint:gas
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +21,7 @@ import (
 	"github.com/goreleaser/nfpm/v2/deprecation"
 	"github.com/goreleaser/nfpm/v2/files"
 	"github.com/goreleaser/nfpm/v2/internal/sign"
+	gzip "github.com/klauspost/pgzip"
 	"github.com/ulikunitz/xz"
 )
 
@@ -35,8 +35,8 @@ func init() {
 // nolint: gochecknoglobals
 var archToDebian = map[string]string{
 	"386":      "i386",
-	"arm5":     "arm5",
-	"arm6":     "armel",
+	"arm5":     "armel",
+	"arm6":     "armhf",
 	"arm7":     "armhf",
 	"mipsle":   "mipsel",
 	"mips64le": "mips64el",
@@ -84,6 +84,11 @@ func (*Deb) ConventionalFileName(info *nfpm.Info) string {
 	return fmt.Sprintf("%s_%s_%s.deb", info.Name, version, info.Arch)
 }
 
+// ConventionalExtension returns the file name conventionally used for Deb packages
+func (*Deb) ConventionalExtension() string {
+	return ".deb"
+}
+
 // ErrInvalidSignatureType happens if the signature type of a deb is not one of
 // origin, maint or archive.
 var ErrInvalidSignatureType = errors.New("invalid signature type")
@@ -127,25 +132,10 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 		return fmt.Errorf("cannot add data.tar.gz to deb: %w", err)
 	}
 
-	// TODO: refactor this
 	if info.Deb.Signature.KeyFile != "" {
-		data := io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
-			bytes.NewReader(dataTarball))
-
-		sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+		sig, sigType, err := doSign(info, debianBinary, controlTarGz, dataTarball)
 		if err != nil {
-			return &nfpm.ErrSigningFailure{Err: err}
-		}
-
-		sigType := "origin"
-		if info.Deb.Signature.Type != "" {
-			sigType = info.Deb.Signature.Type
-		}
-
-		if sigType != "origin" && sigType != "maint" && sigType != "archive" {
-			return &nfpm.ErrSigningFailure{
-				Err: ErrInvalidSignatureType,
-			}
+			return err
 		}
 
 		if err := addArFile(w, "_gpg"+sigType, sig); err != nil {
@@ -156,6 +146,114 @@ func (d *Deb) Package(info *nfpm.Info, deb io.Writer) (err error) { // nolint: f
 	}
 
 	return nil
+}
+
+func doSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	switch info.Deb.Signature.Method {
+	case "dpkg-sig":
+		return dpkgSign(info, debianBinary, controlTarGz, dataTarball)
+	default:
+		return debSign(info, debianBinary, controlTarGz, dataTarball)
+	}
+}
+
+func dpkgSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	sigType := "builder"
+	if info.Deb.Signature.Type != "" {
+		sigType = info.Deb.Signature.Type
+	}
+
+	data, err := readDpkgSigData(info, debianBinary, controlTarGz, dataTarball)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+
+	sig, err := sign.PGPClearSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+	return sig, sigType, nil
+}
+
+func debSign(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) ([]byte, string, error) {
+	data := readDebsignData(debianBinary, controlTarGz, dataTarball)
+
+	sigType := "origin"
+	if info.Deb.Signature.Type != "" {
+		sigType = info.Deb.Signature.Type
+	}
+
+	if sigType != "origin" && sigType != "maint" && sigType != "archive" {
+		return nil, sigType, &nfpm.ErrSigningFailure{
+			Err: ErrInvalidSignatureType,
+		}
+	}
+
+	sig, err := sign.PGPArmoredDetachSignWithKeyID(data, info.Deb.Signature.KeyFile, info.Deb.Signature.KeyPassphrase, info.Deb.Signature.KeyID)
+	if err != nil {
+		return nil, sigType, &nfpm.ErrSigningFailure{Err: err}
+	}
+	return sig, sigType, nil
+}
+
+func readDebsignData(debianBinary, controlTarGz, dataTarball []byte) io.Reader {
+	return io.MultiReader(bytes.NewReader(debianBinary), bytes.NewReader(controlTarGz),
+		bytes.NewReader(dataTarball))
+}
+
+// reference: https://manpages.debian.org/jessie/dpkg-sig/dpkg-sig.1.en.html
+const dpkgSigTemplate = `
+Hash: SHA1
+
+Version: 4
+Signer: {{ .Signer }}
+Date: {{ .Date }}
+Role: {{ .Role }}
+Files:
+{{range .Files}}{{ .Md5Sum }} {{ .Sha1Sum }} {{ .Size }} {{ .Name }}{{end}}
+`
+
+type dpkgSigData struct {
+	Signer string
+	Date   time.Time
+	Role   string
+	Files  []dpkgSigFileLine
+	Info   *nfpm.Info
+}
+type dpkgSigFileLine struct {
+	Md5Sum  [16]byte
+	Sha1Sum [20]byte
+	Size    int
+	Name    string
+}
+
+func newDpkgSigFileLine(name string, fileContent []byte) dpkgSigFileLine {
+	return dpkgSigFileLine{
+		Name:    name,
+		Md5Sum:  md5.Sum(fileContent),
+		Sha1Sum: sha1.Sum(fileContent),
+		Size:    len(fileContent),
+	}
+}
+
+func readDpkgSigData(info *nfpm.Info, debianBinary, controlTarGz, dataTarball []byte) (io.Reader, error) {
+	data := dpkgSigData{
+		Signer: info.Deb.Signature.Signer,
+		Date:   time.Now(),
+		Role:   info.Deb.Signature.Type,
+		Files: []dpkgSigFileLine{
+			newDpkgSigFileLine("debian-binary", debianBinary),
+			newDpkgSigFileLine("control.tar.gz", controlTarGz),
+			newDpkgSigFileLine("data.tar.gz", dataTarball),
+		},
+	}
+	temp, _ := template.New("dpkg-sig").Parse(dpkgSigTemplate)
+	buf := &bytes.Buffer{}
+	err := temp.Execute(buf, data)
+	if err != nil {
+		return nil, fmt.Errorf("dpkg-sig template error: %w", err)
+	}
+	return buf, nil
 }
 
 func (*Deb) SetPackagerDefaults(info *nfpm.Info) {
@@ -197,7 +295,8 @@ type nopCloser struct {
 func (nopCloser) Close() error { return nil }
 
 func createDataTarball(info *nfpm.Info) (dataTarBall, md5sums []byte,
-	instSize int64, name string, err error) {
+	instSize int64, name string, err error,
+) {
 	var (
 		dataTarball            bytes.Buffer
 		dataTarballWriteCloser io.WriteCloser
@@ -267,7 +366,8 @@ func createSymlinkInsideTar(file *files.Content, out *tar.Writer) error {
 }
 
 func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
-	created map[string]bool) (md5buf bytes.Buffer, instSize int64, err error) {
+	created map[string]bool,
+) (md5buf bytes.Buffer, instSize int64, err error) {
 	// create explicit directories first
 	for _, file := range info.Contents {
 		// at this point, we don't care about other types yet
@@ -280,8 +380,18 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			continue
 		}
 
+		if err := createTree(tw, file.Destination, created); err != nil {
+			return md5buf, 0, err
+		}
+
+		normalizedName := normalizePath(strings.Trim(file.Destination, "/")) + "/"
+
+		if created[normalizedName] {
+			return md5buf, 0, fmt.Errorf("duplicate directory: %q", normalizedName)
+		}
+
 		err = tw.WriteHeader(&tar.Header{
-			Name:     normalizePath(strings.Trim(file.Destination, "/") + "/"),
+			Name:     normalizedName,
 			Mode:     int64(file.FileInfo.Mode),
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
@@ -293,7 +403,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 			return md5buf, 0, err
 		}
 
-		created[strings.TrimPrefix(file.Destination, "/")] = true
+		created[normalizedName] = true
 	}
 
 	// create files and implicit directories
@@ -310,7 +420,7 @@ func createFilesInsideDataTar(info *nfpm.Info, tw *tar.Writer,
 		var size int64 // declare early to avoid shadowing err
 		switch file.Type {
 		case "ghost":
-			// skip ghost files in apk
+			// skip ghost files in deb
 			continue
 		case "dir":
 			// already handled above
@@ -372,7 +482,8 @@ func copyToTarAndDigest(file *files.Content, tw *tar.Writer, md5w io.Writer) (in
 }
 
 func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
-	created map[string]bool, info *nfpm.Info) (int64, error) {
+	created map[string]bool, info *nfpm.Info,
+) (int64, error) {
 	var buf bytes.Buffer
 	out := gzip.NewWriter(&buf)
 	// the writers are properly closed later, this is just in case that we have
@@ -384,7 +495,7 @@ func createChangelogInsideDataTar(tarw *tar.Writer, md5w io.Writer,
 		return 0, err
 	}
 
-	if _, err = out.Write([]byte(changelogContent)); err != nil {
+	if _, err = io.WriteString(out, changelogContent); err != nil {
 		return 0, err
 	}
 
@@ -557,7 +668,7 @@ func newFilePathInsideTar(out *tar.Writer, path, dest string, mode int64) error 
 	if err != nil {
 		return err
 	}
-	content, err := ioutil.ReadAll(file)
+	content, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
@@ -588,12 +699,15 @@ func createTree(tarw *tar.Writer, dst string, created map[string]bool) error {
 			// (eg: usr/)
 			continue
 		}
+
 		if err := tarw.WriteHeader(&tar.Header{
 			Name:     path,
 			Mode:     0o755,
 			Typeflag: tar.TypeDir,
 			Format:   tar.FormatGNU,
 			ModTime:  time.Now(),
+			Uname:    "root",
+			Gname:    "root",
 		}); err != nil {
 			return fmt.Errorf("failed to create folder: %w", err)
 		}
@@ -665,18 +779,15 @@ const controlTemplate = `
 {{- /* Mandatory fields */ -}}
 Package: {{.Info.Name}}
 Version: {{ if .Info.Epoch}}{{ .Info.Epoch }}:{{ end }}{{.Info.Version}}
-         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
          {{- if .Info.Prerelease}}~{{ .Info.Prerelease }}{{- end }}
          {{- if .Info.VersionMetadata}}+{{ .Info.VersionMetadata }}{{- end }}
+         {{- if .Info.Release}}-{{ .Info.Release }}{{- end }}
 Section: {{.Info.Section}}
 Priority: {{.Info.Priority}}
 Architecture: {{.Info.Arch}}
 {{- /* Optional fields */ -}}
 {{- if .Info.Maintainer}}
 Maintainer: {{.Info.Maintainer}}
-{{- end }}
-{{- if .Info.Vendor}}
-Vendor: {{.Info.Vendor}}
 {{- end }}
 Installed-Size: {{.InstalledSize}}
 {{- with .Info.Replaces}}
@@ -705,6 +816,11 @@ Homepage: {{.Info.Homepage}}
 {{- end }}
 {{- /* Mandatory fields */}}
 Description: {{multiline .Info.Description}}
+{{- range $key, $value := .Info.Deb.Fields }}
+{{- if $value }}
+{{$key}}: {{$value}}
+{{- end }}
+{{- end }}
 `
 
 type controlData struct {
@@ -719,7 +835,7 @@ func writeControl(w io.Writer, data controlData) error {
 			return strings.Trim(strings.Join(strs, ", "), " ")
 		},
 		"multiline": func(strs string) string {
-			ret := strings.ReplaceAll(strs, "\n", "\n  ")
+			ret := strings.ReplaceAll(strs, "\n", "\n ")
 			return strings.Trim(ret, " \n")
 		},
 	})

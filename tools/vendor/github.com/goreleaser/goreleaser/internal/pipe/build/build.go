@@ -3,20 +3,16 @@
 package build
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/caarlos0/go-shellwords"
-	"github.com/goreleaser/goreleaser/internal/gio"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/ids"
-	"github.com/goreleaser/goreleaser/internal/logext"
 	"github.com/goreleaser/goreleaser/internal/semerrgroup"
+	"github.com/goreleaser/goreleaser/internal/shell"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	builders "github.com/goreleaser/goreleaser/pkg/build"
 	"github.com/goreleaser/goreleaser/pkg/config"
@@ -35,17 +31,16 @@ func (Pipe) String() string {
 
 // Run the pipe.
 func (Pipe) Run(ctx *context.Context) error {
+	g := semerrgroup.New(ctx.Parallelism)
 	for _, build := range ctx.Config.Builds {
 		if build.Skip {
 			log.WithField("id", build.ID).Info("skip is set")
 			continue
 		}
 		log.WithField("build", build).Debug("building")
-		if err := runPipeOnBuild(ctx, build); err != nil {
-			return err
-		}
+		runPipeOnBuild(ctx, g, build)
 	}
-	return nil
+	return g.Wait()
 }
 
 // Default sets the pipe defaults.
@@ -85,8 +80,7 @@ func buildWithDefaults(ctx *context.Context, build config.Build) (config.Build, 
 	return builders.For(build.Builder).WithDefaults(build)
 }
 
-func runPipeOnBuild(ctx *context.Context, build config.Build) error {
-	g := semerrgroup.New(ctx.Parallelism)
+func runPipeOnBuild(ctx *context.Context, g semerrgroup.Group, build config.Build) {
 	for _, target := range build.Targets {
 		target := target
 		build := build
@@ -110,8 +104,6 @@ func runPipeOnBuild(ctx *context.Context, build config.Build) error {
 			return nil
 		})
 	}
-
-	return g.Wait()
 }
 
 func runHook(ctx *context.Context, opts builders.Options, buildEnv []string, hooks config.Hooks) error {
@@ -151,7 +143,7 @@ func runHook(ctx *context.Context, opts builders.Options, buildEnv []string, hoo
 			return err
 		}
 
-		if err := run(ctx, dir, cmd, env); err != nil {
+		if err := shell.Run(ctx, dir, cmd, env, hook.Output); err != nil {
 			return err
 		}
 	}
@@ -175,20 +167,25 @@ func buildOptionsForTarget(ctx *context.Context, build config.Build, target stri
 
 	var gomips string
 	var goarm string
+	var goamd64 string
 	if strings.HasPrefix(goarch, "arm") && len(parts) > 2 {
 		goarm = parts[2]
 	}
 	if strings.HasPrefix(goarch, "mips") && len(parts) > 2 {
 		gomips = parts[2]
 	}
+	if strings.HasPrefix(goarch, "amd64") && len(parts) > 2 {
+		goamd64 = parts[2]
+	}
 
 	buildOpts := builders.Options{
-		Target: target,
-		Ext:    ext,
-		Goos:   goos,
-		Goarch: goarch,
-		Goarm:  goarm,
-		Gomips: gomips,
+		Target:  target,
+		Ext:     ext,
+		Goos:    goos,
+		Goarch:  goarch,
+		Goarm:   goarm,
+		Gomips:  gomips,
+		Goamd64: goamd64,
 	}
 
 	binary, err := tmpl.New(ctx).WithBuildOptions(buildOpts).Apply(build.Binary)
@@ -202,14 +199,15 @@ func buildOptionsForTarget(ctx *context.Context, build config.Build, target stri
 	if build.NoUniqueDistDir {
 		dir = ""
 	}
-	path, err := filepath.Abs(filepath.Join(ctx.Config.Dist, dir, name))
+	relpath := filepath.Join(ctx.Config.Dist, dir, name)
+	path, err := filepath.Abs(relpath)
 	if err != nil {
 		return nil, err
 	}
 	buildOpts.Path = path
 	buildOpts.Name = name
 
-	log.WithField("binary", buildOpts.Path).Info("building")
+	log.WithField("binary", relpath).Info("building")
 	return &buildOpts, nil
 }
 
@@ -229,27 +227,4 @@ func extFor(target string, flags config.FlagArray) string {
 		return ".wasm"
 	}
 	return ""
-}
-
-func run(ctx *context.Context, dir string, command, env []string) error {
-	fields := log.Fields{
-		"cmd": command,
-		"env": env,
-	}
-	/* #nosec */
-	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
-	cmd.Env = env
-	var b bytes.Buffer
-	w := gio.Safe(&b)
-	cmd.Stderr = io.MultiWriter(logext.NewWriter(fields, logext.Error), w)
-	cmd.Stdout = io.MultiWriter(logext.NewWriter(fields, logext.Info), w)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	log.WithFields(fields).Debug("running")
-	if err := cmd.Run(); err != nil {
-		log.WithFields(fields).WithError(err).Debug("failed")
-		return fmt.Errorf("%q: %w", b.String(), err)
-	}
-	return nil
 }

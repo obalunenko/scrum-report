@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 )
 
 const (
@@ -26,6 +25,10 @@ const (
 	Audit GlobalOption = "audit"
 	// NoSecAlternative global option alternative for #nosec directive
 	NoSecAlternative GlobalOption = "#nosec"
+	// ExcludeRules global option for some rules  should not be load
+	ExcludeRules GlobalOption = "exclude"
+	// IncludeRules global option for  should be load
+	IncludeRules GlobalOption = "include"
 )
 
 // Config is used to provide configuration and customization to each of the rules.
@@ -60,7 +63,7 @@ func (c Config) convertGlobals() {
 // should be used with io.Reader to load configuration from
 // file or from string etc.
 func (c Config) ReadFrom(r io.Reader) (int64, error) {
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return int64(len(data)), err
 	}

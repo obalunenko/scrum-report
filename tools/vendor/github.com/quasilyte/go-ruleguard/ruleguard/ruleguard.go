@@ -75,7 +75,7 @@ func (e *Engine) Run(ctx *RunContext, f *ast.File) error {
 }
 
 type LoadContext struct {
-	DebugFilter  string
+	DebugFunc    string
 	DebugImports bool
 	DebugPrint   func(string)
 
@@ -83,7 +83,7 @@ type LoadContext struct {
 	// If function returns false, that group will not be included
 	// in the resulting rules set.
 	// Nil filter accepts all rule groups.
-	GroupFilter func(string) bool
+	GroupFilter func(*GoRuleGroup) bool
 
 	Fset *token.FileSet
 }
@@ -93,13 +93,40 @@ type RunContext struct {
 	DebugImports bool
 	DebugPrint   func(string)
 
-	Types  *types.Info
-	Sizes  types.Sizes
-	Fset   *token.FileSet
-	Report func(rule GoRuleInfo, n ast.Node, msg string, s *Suggestion)
-	Pkg    *types.Package
+	Types *types.Info
+	Sizes types.Sizes
+	Fset  *token.FileSet
+	Pkg   *types.Package
+
+	// Report is a function that is called for every successful ruleguard match.
+	// The pointer to ReportData is reused, it should not be kept.
+	// If you want to keep it after Report() returns, make a copy.
+	Report func(*ReportData)
 
 	GoVersion GoVersion
+
+	// TruncateLen is a length threshold (in bytes) for interpolated vars in Report() templates.
+	//
+	// Truncation removes the part of the string in the middle and replaces it with <...>
+	// so it meets the max length constraint.
+	//
+	// The default value is 60 (implied if value is 0).
+	//
+	// Note that this value is ignored for Suggest templates.
+	// Ruleguard doesn't truncate suggested replacement candidates.
+	TruncateLen int
+}
+
+type ReportData struct {
+	RuleInfo   GoRuleInfo
+	Node       ast.Node
+	Message    string
+	Suggestion *Suggestion
+
+	// Experimental: fields below are part of the experiment.
+	// They'll probably be removed or changed over time.
+
+	Func *ast.FuncDecl
 }
 
 type Suggestion struct {

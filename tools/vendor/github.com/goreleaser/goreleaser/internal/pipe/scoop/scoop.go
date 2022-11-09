@@ -11,9 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apex/log"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
 	"github.com/goreleaser/goreleaser/internal/client"
+	"github.com/goreleaser/goreleaser/internal/commitauthor"
 	"github.com/goreleaser/goreleaser/internal/pipe"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
 	"github.com/goreleaser/goreleaser/pkg/config"
@@ -21,7 +22,7 @@ import (
 )
 
 // ErrNoWindows when there is no build for windows (goos doesn't contain windows).
-var ErrNoWindows = errors.New("scoop requires a windows build")
+var ErrNoWindows = errors.New("scoop requires a windows build and archive")
 
 const scoopConfigExtra = "ScoopConfig"
 
@@ -54,14 +55,12 @@ func (Pipe) Default(ctx *context.Context) error {
 	if ctx.Config.Scoop.Name == "" {
 		ctx.Config.Scoop.Name = ctx.Config.ProjectName
 	}
-	if ctx.Config.Scoop.CommitAuthor.Name == "" {
-		ctx.Config.Scoop.CommitAuthor.Name = "goreleaserbot"
-	}
-	if ctx.Config.Scoop.CommitAuthor.Email == "" {
-		ctx.Config.Scoop.CommitAuthor.Email = "goreleaser@carlosbecker.com"
-	}
+	ctx.Config.Scoop.CommitAuthor = commitauthor.Default(ctx.Config.Scoop.CommitAuthor)
 	if ctx.Config.Scoop.CommitMessageTemplate == "" {
 		ctx.Config.Scoop.CommitMessageTemplate = "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
+	}
+	if ctx.Config.Scoop.Goamd64 == "" {
+		ctx.Config.Scoop.Goamd64 = "v1"
 	}
 	return nil
 }
@@ -69,15 +68,17 @@ func (Pipe) Default(ctx *context.Context) error {
 func doRun(ctx *context.Context, cl client.Client) error {
 	scoop := ctx.Config.Scoop
 
-	// TODO: multiple archives
-	if ctx.Config.Archives[0].Format == "binary" {
-		return pipe.Skip("archive format is binary")
-	}
-
 	archives := ctx.Artifacts.Filter(
 		artifact.And(
 			artifact.ByGoos("windows"),
 			artifact.ByType(artifact.UploadableArchive),
+			artifact.Or(
+				artifact.And(
+					artifact.ByGoarch("amd64"),
+					artifact.ByGoamd64(scoop.Goamd64),
+				),
+				artifact.ByGoarch("386"),
+			),
 		),
 	).List()
 	if len(archives) == 0 {
@@ -119,9 +120,12 @@ func doPublish(ctx *context.Context, cl client.Client) error {
 	}
 
 	manifest := manifests[0]
-	scoop := manifest.Extra[scoopConfigExtra].(config.Scoop)
 
-	var err error
+	scoop, err := artifact.Extra[config.Scoop](*manifest, scoopConfigExtra)
+	if err != nil {
+		return err
+	}
+
 	cl, err = client.NewIfToken(ctx, cl, scoop.Bucket.Token)
 	if err != nil {
 		return err
@@ -145,6 +149,11 @@ func doPublish(ctx *context.Context, cl client.Client) error {
 		return err
 	}
 
+	author, err := commitauthor.Get(ctx, scoop.CommitAuthor)
+	if err != nil {
+		return err
+	}
+
 	content, err := os.ReadFile(manifest.Path)
 	if err != nil {
 		return err
@@ -153,7 +162,7 @@ func doPublish(ctx *context.Context, cl client.Client) error {
 	repo := client.RepoFromRef(scoop.Bucket)
 	return cl.CreateFile(
 		ctx,
-		scoop.CommitAuthor,
+		author,
 		repo,
 		content,
 		path.Join(scoop.Folder, manifest.Name),
@@ -245,9 +254,14 @@ func dataFor(ctx *context.Context, cl client.Client, artifacts []*artifact.Artif
 			"sum":              sum,
 		}).Debug("scoop url templating")
 
+		binaries, err := binaries(*artifact)
+		if err != nil {
+			return manifest, err
+		}
+
 		manifest.Architecture[arch] = Resource{
 			URL:  url,
-			Bin:  binaries(artifact),
+			Bin:  binaries,
 			Hash: sum,
 		}
 	}
@@ -255,12 +269,16 @@ func dataFor(ctx *context.Context, cl client.Client, artifacts []*artifact.Artif
 	return manifest, nil
 }
 
-func binaries(a *artifact.Artifact) []string {
+func binaries(a artifact.Artifact) ([]string, error) {
 	// nolint: prealloc
 	var bins []string
-	wrap := a.ExtraOr(artifact.ExtraWrappedIn, "").(string)
-	for _, b := range a.ExtraOr(artifact.ExtraBuilds, []*artifact.Artifact{}).([]*artifact.Artifact) {
+	wrap := artifact.ExtraOr(a, artifact.ExtraWrappedIn, "")
+	builds, err := artifact.Extra[[]artifact.Artifact](a, artifact.ExtraBuilds)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range builds {
 		bins = append(bins, filepath.Join(wrap, b.Name))
 	}
-	return bins
+	return bins, nil
 }

@@ -8,12 +8,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apex/log"
+	"github.com/caarlos0/go-shellwords"
+	"github.com/caarlos0/log"
 	"github.com/goreleaser/goreleaser/internal/artifact"
 	"github.com/goreleaser/goreleaser/internal/ids"
 	"github.com/goreleaser/goreleaser/internal/pipe"
 	"github.com/goreleaser/goreleaser/internal/semerrgroup"
+	"github.com/goreleaser/goreleaser/internal/shell"
 	"github.com/goreleaser/goreleaser/internal/tmpl"
+	"github.com/goreleaser/goreleaser/pkg/build"
 	"github.com/goreleaser/goreleaser/pkg/config"
 	"github.com/goreleaser/goreleaser/pkg/context"
 )
@@ -32,6 +35,9 @@ func (Pipe) Default(ctx *context.Context) error {
 		if unibin.ID == "" {
 			unibin.ID = ctx.Config.ProjectName
 		}
+		if len(unibin.IDs) == 0 {
+			unibin.IDs = []string{unibin.ID}
+		}
 		if unibin.NameTemplate == "" {
 			unibin.NameTemplate = "{{ .ProjectName }}"
 		}
@@ -46,8 +52,19 @@ func (Pipe) Run(ctx *context.Context) error {
 	for _, unibin := range ctx.Config.UniversalBinaries {
 		unibin := unibin
 		g.Go(func() error {
-			if err := makeUniversalBinary(ctx, unibin); err != nil {
+			opts := build.Options{
+				Target: "darwin_all",
+				Goos:   "darwin",
+				Goarch: "all",
+			}
+			if err := runHook(ctx, &opts, unibin.Hooks.Pre); err != nil {
+				return fmt.Errorf("pre hook failed: %w", err)
+			}
+			if err := makeUniversalBinary(ctx, &opts, unibin); err != nil {
 				return err
+			}
+			if err := runHook(ctx, &opts, unibin.Hooks.Post); err != nil {
+				return fmt.Errorf("post hook failed: %w", err)
 			}
 			if !unibin.Replace {
 				return nil
@@ -56,6 +73,49 @@ func (Pipe) Run(ctx *context.Context) error {
 		})
 	}
 	return g.Wait()
+}
+
+func runHook(ctx *context.Context, opts *build.Options, hooks config.Hooks) error {
+	if len(hooks) == 0 {
+		return nil
+	}
+
+	for _, hook := range hooks {
+		var envs []string
+		envs = append(envs, ctx.Env.Strings()...)
+
+		tpl := tmpl.New(ctx).WithBuildOptions(*opts)
+		for _, rawEnv := range hook.Env {
+			env, err := tpl.Apply(rawEnv)
+			if err != nil {
+				return err
+			}
+
+			envs = append(envs, env)
+		}
+
+		tpl = tpl.WithEnvS(envs)
+		dir, err := tpl.Apply(hook.Dir)
+		if err != nil {
+			return err
+		}
+
+		sh, err := tpl.Apply(hook.Cmd)
+		if err != nil {
+			return err
+		}
+
+		log.WithField("hook", sh).Info("running hook")
+		cmd, err := shellwords.Parse(sh)
+		if err != nil {
+			return err
+		}
+
+		if err := shell.Run(ctx, dir, cmd, envs, hook.Output); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type input struct {
@@ -73,13 +133,15 @@ const (
 )
 
 // heavily based on https://github.com/randall77/makefat
-func makeUniversalBinary(ctx *context.Context, unibin config.UniversalBinary) error {
+func makeUniversalBinary(ctx *context.Context, opts *build.Options, unibin config.UniversalBinary) error {
 	name, err := tmpl.New(ctx).Apply(unibin.NameTemplate)
 	if err != nil {
 		return err
 	}
+	opts.Name = name
 
-	path := filepath.Join(ctx.Config.Dist, name+"_darwin_all", name)
+	path := filepath.Join(ctx.Config.Dist, unibin.ID+"_darwin_all", name)
+	opts.Path = path
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -89,7 +151,9 @@ func makeUniversalBinary(ctx *context.Context, unibin config.UniversalBinary) er
 		return pipe.Skip(fmt.Sprintf("no darwin binaries found with id %q", unibin.ID))
 	}
 
-	log.WithField("binary", path).Infof("creating from %d binaries", len(binaries))
+	log.WithField("id", unibin.ID).
+		WithField("binary", path).
+		Infof("creating from %d binaries", len(binaries))
 
 	var inputs []input
 	offset := int64(align)
@@ -157,13 +221,20 @@ func makeUniversalBinary(ctx *context.Context, unibin config.UniversalBinary) er
 		return fmt.Errorf("failed to close file: %w", err)
 	}
 
+	extra := map[string]interface{}{}
+	for k, v := range binaries[0].Extra {
+		extra[k] = v
+	}
+	extra[artifact.ExtraReplaces] = unibin.Replace
+	extra[artifact.ExtraID] = unibin.ID
+
 	ctx.Artifacts.Add(&artifact.Artifact{
 		Type:   artifact.UniversalBinary,
 		Name:   name,
 		Path:   path,
 		Goos:   "darwin",
 		Goarch: "all",
-		Extra:  binaries[0].Extra,
+		Extra:  extra,
 	})
 
 	return nil
@@ -173,6 +244,6 @@ func filterFor(unibin config.UniversalBinary) artifact.Filter {
 	return artifact.And(
 		artifact.ByType(artifact.Binary),
 		artifact.ByGoos("darwin"),
-		artifact.ByIDs(unibin.ID),
+		artifact.ByIDs(unibin.IDs...),
 	)
 }
