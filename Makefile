@@ -254,8 +254,12 @@ dev-docker-compose-stop:
 	./scripts/docker/compose/dev/stop.sh
 .PHONY: dev-docker-compose-stop
 
+## Build all dev images: base and services.
+docker-prepare-images-dev: docker-build-base-dev docker-build-dev
+.PHONY: docker-prepare-images-dev
+
 ## Dev local full deploy: build base images, build services images, deploy to docker compose
-deploy-local-dev: docker-build-base-dev docker-build-dev run-local-dev
+deploy-local-dev: docker-prepare-images-dev run-local-dev
 .PHONY: deploy-local-dev
 
 ## Run locally dev: deploy to docker compose and expose tunnels.
