@@ -1,49 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1" name="viewport"/>
-   <style>
-       body {
-           font-family: Arial, Helvetica, sans-serif;
-       }
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+        }
 
 
-       /* Full-width input fields */
-       textarea[type=text] {
-           width: 100%;
-           padding: 12px 20px;
-           margin: 8px 0;
-           display: inline-block;
-           border: 1px solid #ccc;
-           box-sizing: border-box;
-       }
+        /* Full-width input fields */
+        textarea[type=text] {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
 
-       /* Set a style for all buttons */
-       button {
-           background-color: #4CAF50;
-           color: white;
-           padding: 14px 20px;
-           margin: 8px 0;
-           border: none;
-           cursor: pointer;
-           width: 100%;
-       }
+        /* Set a style for all buttons */
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
 
-       button:hover {
-           opacity: 0.8;
-       }
+        button:hover {
+            opacity: 0.8;
+        }
 
-       @-webkit-keyframes animatezoom {
-           from {-webkit-transform: scale(0)}
-           to {-webkit-transform: scale(1)}
-       }
+        @-webkit-keyframes animatezoom {
+            from {
+                -webkit-transform: scale(0)
+            }
+            to {
+                -webkit-transform: scale(1)
+            }
+        }
 
-       @keyframes animatezoom {
-           from {transform: scale(0)}
-           to {transform: scale(1)}
-       }
-   </style>
+        @keyframes animatezoom {
+            from {
+                transform: scale(0)
+            }
+            to {
+                transform: scale(1)
+            }
+        }
+    </style>
     <title>Report page</title>
 </head>
 
@@ -51,21 +59,21 @@
 <div markdown="1">
     <article id="report">
         <p>*What did I did*<br>
-        {{range $a := .Yesterday}}
-            • {{$a}}<br>
-        {{end}}
+            {{range $a := .Yesterday}}
+                • {{$a}}<br>
+            {{end}}
 
 
         <p>*What will I do*<br>
-           {{range $a := .Today}}
+            {{range $a := .Today}}
                 • {{$a}}<br>
             {{end}}
 
 
         <p>*Impediments*<br>
-        {{range $a := .Impediments}}
-            • {{$a}}<br>
-        {{end}}
+            {{range $a := .Impediments}}
+                • {{$a}}<br>
+            {{end}}
 
 
     </article>
@@ -73,7 +81,8 @@
 <div>
     <form action="/">
         <button class="btn btn-danger" type="submit" style="width:100%;">
-            New report</button>
+            New report
+        </button>
     </form>
 </div>
 </body>
