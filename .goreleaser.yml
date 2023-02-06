@@ -2,11 +2,22 @@ release:
   github:
     owner: obalunenko
     name: scrum-report
+  footer: |
+    **Full Changelog**: https://github.com/obalunenko/georgia-tax-calculator/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-env:
-  - GO111MODULE=on
-  - CGO_ENABLED=0
-  - GOPROXY=https://proxy.golang.org,direct
+gomod:
+  proxy: true
+  # If proxy is true, use these environment variables when running `go mod` commands (namely, `go mod tidy`).
+  # Defaults to `os.Environ()`.
+  env:
+    - GOPROXY=https://proxy.golang.org,direct
+    - GOSUMDB=sum.golang.org
+    - GOPRIVATE=example.com/blah
+    - CGO_ENABLED=0
+  # Which Go binary to use.
+  # Defaults to `go`.
+  gobinary: go
+
 before:
   hooks:
     - go mod verify
@@ -15,19 +26,25 @@ builds:
   - id: service
     binary: scrum-report
     goos:
+      - linux
       - darwin
       - windows
-      - linux
     goarch:
+      - 386
       - amd64
       - arm
+      - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
     main: ./cmd/scrum-report
+    flags:
+      - -trimpath
     ldflags:
       - "{{ .Env.GO_BUILD_LDFLAGS }}"
-
+      -
 universal_binaries:
-  -
-    # ID of the source build
+  - # ID of the source build
     #
     # Defaults to the project name.
     id: service
@@ -44,7 +61,6 @@ universal_binaries:
     #
     # Defaults to false.
     replace: true
-
 dockers:
   # You can have multiple Docker images.
   -
@@ -90,25 +106,16 @@ archives:
   - id: service
     builds:
       - service
+    rlcp: true
     format: tar.gz
     wrap_in_directory: true
     format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      amd64: 64-bit
-      386: 32-bit
-      darwin: macOS
-      linux: Tux
     name_template: "{{ .Binary }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     files:
       - LICENSE
       - README.md
-      - .env.example
-      - src: deployments/docker-compose/release/docker-compose.yml
-        dst: .
-        strip_parent: true
-
 checksum:
   name_template: "{{ .ProjectName }}-{{ .Version }}-checksums.txt"
 
@@ -117,6 +124,7 @@ snapshot:
 
 changelog:
   sort: asc
+  use: github
   filters:
     exclude:
       - "^docs:"
@@ -131,3 +139,15 @@ changelog:
       - Rebase on master
       - "^Makefile"
       - "goreleaser"
+  groups:
+    - title: 'New Features'
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: 'Bug fixes'
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 10
+    - title: Other work
+      order: 999
+
+milestones:
+  - close: true
