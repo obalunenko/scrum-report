@@ -1,4 +1,4 @@
-FROM alpine:3.16.2
+FROM alpine:3.17.0
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="release"
@@ -11,9 +11,11 @@ RUN addgroup -S scrumreport -g ${UID} && \
 
 WORKDIR /
 
+ARG APK_CA_CERTIFICATES_VERSION=20220614-r4
+
 RUN apk update && \
     apk add --no-cache \
-        "ca-certificates" && \
+    "ca-certificates=${APK_CA_CERTIFICATES_VERSION}" && \
     rm -rf /var/cache/apk/*
 
 COPY scrum-report /

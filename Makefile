@@ -1,4 +1,3 @@
-NAME=scrum-report
 BIN_DIR=./bin
 
 SHELL := env DOCKER_REPO=$(DOCKER_REPO) $(SHELL)
@@ -6,6 +5,17 @@ DOCKER_REPO?=olegbalunenko
 
 SHELL := env VERSION=$(VERSION) $(SHELL)
 VERSION ?= $(shell git describe --tags $(git rev-list --tags --max-count=1))
+
+APP_NAME?=scrum-report
+SHELL := env APP_NAME=$(APP_NAME) $(SHELL)
+
+GOTOOLS_IMAGE_TAG?=v0.4.3
+SHELL := env GOTOOLS_IMAGE_TAG=$(GOTOOLS_IMAGE_TAG) $(SHELL)
+
+COMPOSE_TOOLS_FILE=deployments/docker-compose/go-tools-docker-compose.yml
+COMPOSE_TOOLS_CMD_BASE=docker compose -f $(COMPOSE_TOOLS_FILE)
+COMPOSE_TOOLS_CMD_UP=$(COMPOSE_TOOLS_CMD_BASE) up --exit-code-from
+COMPOSE_TOOLS_CMD_PULL=$(COMPOSE_TOOLS_CMD_BASE) pull
 
 TARGET_MAX_CHAR_NUM=20
 
@@ -29,58 +39,69 @@ help:
 
 
 
-build: compile-scrum-report
+## Build project.
+build: compile-app
 .PHONY: build
 
-compile-scrum-report:
-	./scripts/build/scrum-report.sh
-.PHONY: compile-scrum-report
+## Compile app.
+compile-app:
+	./scripts/build/app.sh
+.PHONY: compile-app
 
 ## Test coverage report.
 test-cover:
 	./scripts/tests/coverage.sh
 .PHONY: test-cover
 
-## Tests sonar report generate.
-test-sonar-report:
-	./scripts/tests/sonar-report.sh
-.PHONY: test-sonar-report
+prepare-cover-report: test-cover
+	$(COMPOSE_TOOLS_CMD_UP) prepare-cover-report prepare-cover-report
+.PHONY: prepare-cover-report
 
 ## Open coverage report.
-open-cover-report: test-cover
+open-cover-report: prepare-cover-report
 	./scripts/open-coverage-report.sh
 .PHONY: open-cover-report
 
-update-readme-cover: build test-cover
-	./scripts/update-readme-coverage.sh
+## Update readme coverage.
+update-readme-cover: build prepare-cover-report
+	$(COMPOSE_TOOLS_CMD_UP) update-readme-coverage update-readme-coverage
 .PHONY: update-readme-cover
 
+## Run tests.
 test:
-	./scripts/tests/run.sh
+	$(COMPOSE_TOOLS_CMD_UP) run-tests run-tests
 .PHONY: test
 
-configure: sync-vendor
+## Run regression tests.
+test-regression: test
+.PHONY: test-regression
 
+## Sync vendor and install needed tools.
+configure: sync-vendor install-tools
+
+## Sync vendor with go.mod.
 sync-vendor:
 	./scripts/sync-vendor.sh
 .PHONY: sync-vendor
 
 ## Fix imports sorting.
 imports:
-	./scripts/style/fix-imports.sh
+	$(COMPOSE_TOOLS_CMD_UP) fix-imports fix-imports
 .PHONY: imports
 
 ## Format code with go fmt.
 fmt:
-	./scripts/style/fmt.sh
+	$(COMPOSE_TOOLS_CMD_UP) fix-fmt fix-fmt
 .PHONY: fmt
 
 ## Format code and sort imports.
 format-project: fmt imports
 .PHONY: format-project
 
+## Installs vendored tools.
 install-tools:
-	./scripts/install/vendored-tools.sh
+	echo "Installing ${GOTOOLS_IMAGE_TAG}"
+	$(COMPOSE_TOOLS_CMD_PULL)
 .PHONY: install-tools
 
 ## vet project
@@ -90,22 +111,22 @@ vet:
 
 ## Run full linting
 lint-full:
-	./scripts/linting/run-linters.sh
+	$(COMPOSE_TOOLS_CMD_UP) lint-full lint-full
 .PHONY: lint-full
 
 ## Run linting for build pipeline
 lint-pipeline:
-	./scripts/linting/golangci-pipeline.sh
+	$(COMPOSE_TOOLS_CMD_UP) lint-pipeline lint-pipeline
 .PHONY: lint-pipeline
 
 ## Run linting for sonar report
 lint-sonar:
-	./scripts/linting/golangci-sonar.sh
+	$(COMPOSE_TOOLS_CMD_UP) lint-sonar lint-sonar
 .PHONY: lint-sonar
 
-## recreate all generated code and swagger documentation.
+## recreate all generated code and documentation.
 codegen:
-	./scripts/codegen/go-generate.sh
+	$(COMPOSE_TOOLS_CMD_UP) go-generate go-generate
 .PHONY: codegen
 
 ## recreate all generated code and swagger documentation and format code.
@@ -128,7 +149,7 @@ check-releaser:
 .PHONY: check-releaser
 
 ## Issue new release.
-new-version: vet test build
+new-version: vet test-regression build
 	./scripts/release/new-version.sh
 .PHONY: new-release
 
@@ -233,8 +254,12 @@ dev-docker-compose-stop:
 	./scripts/docker/compose/dev/stop.sh
 .PHONY: dev-docker-compose-stop
 
+## Build all dev images: base and services.
+docker-prepare-images-dev: docker-build-base-dev docker-build-dev
+.PHONY: docker-prepare-images-dev
+
 ## Dev local full deploy: build base images, build services images, deploy to docker compose
-deploy-local-dev: docker-build-base-dev docker-build-dev run-local-dev
+deploy-local-dev: docker-prepare-images-dev run-local-dev
 .PHONY: deploy-local-dev
 
 ## Run locally dev: deploy to docker compose and expose tunnels.
