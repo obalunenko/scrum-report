@@ -43,6 +43,15 @@ jobs:
           error_level: 2
 
   build:
+    strategy:
+      fail-fast: true
+      max-parallel: 2
+      matrix:
+        env:
+          [
+            "prod",
+            "dev",
+          ]
     needs: [ lint-dockerfiles ]
     name: Build
     runs-on: "ubuntu-22.04"
@@ -60,11 +69,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build prod images
+      - name: Build ${{ matrix.env }} images
         run: |
-          make docker-prepare-images-prod
-
-      - name: Build dev images
-        run: |
-          make docker-prepare-images-dev
+          make docker-prepare-images-${{ matrix.env }}
 
