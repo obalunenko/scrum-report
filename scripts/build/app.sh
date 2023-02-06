@@ -9,18 +9,17 @@ BIN_DIR=${REPO_ROOT}/bin
 
 echo "${SCRIPT_NAME} is running... "
 
-APP="scrum-report"
+APP=${APP_NAME}
 
 echo "Building ${APP}..."
 
 COMMIT="$(git rev-parse HEAD)"
 SHORTCOMMIT="$(git rev-parse --short HEAD)"
 DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VERSION="$(git describe --tags --always "$(git rev-list --tags --max-count=1)")"
+VERSION="$(git tag | sort -V | tail -1)"
 GOVERSION="$(go version | awk '{print $3;}')"
 
-if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]
- then
+if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]; then
   VERSION="v0.0.0"
 fi
 
@@ -39,6 +38,6 @@ GO_BUILD_PACKAGE="${REPO_ROOT}/cmd/${APP}"
 
 rm -rf "${BIN_OUT}"
 
-go build -o "${BIN_OUT}" -a -ldflags "${GO_BUILD_LDFLAGS}" "${GO_BUILD_PACKAGE}"
+go build -trimpath -o "${BIN_OUT}" -a -ldflags "${GO_BUILD_LDFLAGS}" "${GO_BUILD_PACKAGE}"
 
 echo "Binary compiled at ${BIN_OUT}"
