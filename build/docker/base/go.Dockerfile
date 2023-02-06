@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine3.16
+FROM golang:1.20.0-alpine3.17
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="base"
@@ -8,42 +8,24 @@ RUN mkdir -p "${GOPATH}/src/${PROJECT_URL}/base-tools"
 
 WORKDIR "${GOPATH}/src/${PROJECT_URL}/base-tools"
 
-RUN apk update && \
-    apk add --no-cache \
-        "git" \
-        "make" \
-        "gcc" \
-        "bash" \
-        "curl" \
-        "musl-dev" \
-        "unzip" \
-        "ca-certificates" \
-        "libstdc++" \
-        "binutils-gold" && \
-    rm -rf /var/cache/apk/*
+ARG APK_BASH_VERSION=~5
+ARG APK_GIT_VERSION=~2
+ARG APK_MAKE_VERSION=~4
+ARG APK_OPENSSH_VERSION=~9
+ARG APK_GCC_VERSION=~12
+ARG APK_BUILDBASE_VERSION=~0
+ARG APK_CA_CERTIFICATES_VERSION=20220614-r4
+ARG APK_BINUTILS_VERSION=~2
 
-# Get and install glibc for alpine
-ARG APK_GLIBC_VERSION=2.29-r0
-ARG APK_GLIBC_FILE="glibc-${APK_GLIBC_VERSION}.apk"
-ARG APK_GLIBC_BIN_FILE="glibc-bin-${APK_GLIBC_VERSION}.apk"
-ARG APK_GLIBC_BASE_URL="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${APK_GLIBC_VERSION}"
-# hadolint ignore=DL3018
-RUN wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub \
-    && wget -nv "${APK_GLIBC_BASE_URL}/${APK_GLIBC_FILE}" \
-    && apk --no-cache add "${APK_GLIBC_FILE}" \
-    && wget -nv "${APK_GLIBC_BASE_URL}/${APK_GLIBC_BIN_FILE}" \
-    && apk --no-cache add "${APK_GLIBC_BIN_FILE}" \
-    && rm glibc-*
-
-COPY .git .git
-COPY scripts scripts
-COPY tools tools
-
-COPY Makefile Makefile
-
-# install tools from vendor
-RUN make install-tools && \
-    rm -rf "${GOPATH}/src/${PROJECT_URL}/base-tools"
+RUN apk add --no-cache \
+    "bash=${APK_BASH_VERSION}" \
+	"git=${APK_GIT_VERSION}" \
+	"make=${APK_MAKE_VERSION}" \
+	"openssh-client=${APK_OPENSSH_VERSION}" \
+	"build-base=${APK_BUILDBASE_VERSION}" \
+    "gcc=${APK_GCC_VERSION}" \
+    "ca-certificates=${APK_CA_CERTIFICATES_VERSION}" \
+    "binutils-gold=${APK_BINUTILS_VERSION}"
 
 ENV GOBIN="${GOPATH}/bin"
 ENV PATH="${PATH}":"${GOBIN}"
