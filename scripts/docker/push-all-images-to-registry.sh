@@ -8,11 +8,10 @@ echo "${SCRIPT_NAME} is running... "
 
 SPAMASSASSIN_DOCKER_REPO=$1
 
-if ! command -v docker
-then
- printf "Cannot check docker, please install docker:
+if ! command -v docker; then
+  printf "Cannot check docker, please install docker:
         https://docs.docker.com/get-docker/ \n"
-   exit 1
+  exit 1
 fi
 
 echo "Pushing images to repo ${SPAMASSASSIN_DOCKER_REPO}..."

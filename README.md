@@ -11,7 +11,6 @@
 
 # scrum-report
 
-
 Daily stand up meeting scrum report generator in markdown format for slack
 
 ## Template
@@ -27,7 +26,8 @@ Daily stand up meeting scrum report generator in markdown format for slack
 
 ## Usage of scrum-report
 
-1. Download executable file: [![Latest release artifacts](https://img.shields.io/github/v/release/obalunenko/scrum-report)](https://github.com/obalunenko/scrum-report/releases/latest)
+1. Download executable
+   file: [![Latest release artifacts](https://img.shields.io/github/v/release/obalunenko/scrum-report)](https://github.com/obalunenko/scrum-report/releases/latest)
 2. Unrar archive.
 3. a. Run executable `scrum-report` with necessary flags. (see bellow list of available flags)
    b. Run docker-compose `docker-compose -f ./docker-compose.yml up --build -d`
