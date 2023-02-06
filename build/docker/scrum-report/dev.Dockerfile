@@ -1,7 +1,7 @@
 ARG DOCKER_REPO_BASE
 ARG DOCKER_GO_BASE_DEV_TAG=latest
 # hadolint ignore=DL3007
-FROM ${DOCKER_REPO_BASE}scrum-report-go-base-dev:${DOCKER_GO_BASE_DEV_TAG} as build-container
+FROM ${DOCKER_REPO_BASE}scrum-report-go-base-dev:${DOCKER_GO_BASE_DEV_TAG} AS build-container
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="dev"
@@ -28,7 +28,7 @@ RUN make build && \
 
 COPY ./build/docker/scrum-report/entrypoint.sh /app/entrypoint.sh
 
-FROM alpine:3.17.0 as waiter
+FROM alpine:3.17.0 AS waiter
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="dev"
