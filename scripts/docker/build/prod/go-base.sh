@@ -14,11 +14,10 @@ echo "${SCRIPT_NAME} is running... "
 checkInstalled 'docker'
 
 SHORTCOMMIT="$(git rev-parse --short HEAD)"
-VERSION="$(git describe --tags --always "$(git rev-list --tags --max-count=1)")"
+VERSION="$(git tag | sort -V | tail -1)"
 
-if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]
- then
-  VERSION="v0.0.0-${SHORTCOMMIT}"
+if [ -z "${VERSION}" ] || [ "${VERSION}" = "${SHORTCOMMIT}" ]; then
+  VERSION="v0.0.0"
 fi
 
 DOCKER_REPO="${DOCKER_REPO}"
