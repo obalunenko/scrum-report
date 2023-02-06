@@ -43,7 +43,7 @@ jobs:
           error_level: 2
 
   build:
-    needs: [ lint-dockerfiles, check-release-config ]
+    needs: [ lint-dockerfiles ]
     name: Build
     runs-on: "ubuntu-22.04"
     steps:
