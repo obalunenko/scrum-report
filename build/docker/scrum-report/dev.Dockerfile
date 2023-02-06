@@ -51,9 +51,11 @@ RUN addgroup -S scrumreport -g ${UID} && \
 
 WORKDIR /
 
+ARG APK_CA_CERTIFICATES_VERSION=20220614-r4
+
 RUN apk update && \
     apk add --no-cache \
-        "ca-certificates" && \
+    "ca-certificates=${APK_CA_CERTIFICATES_VERSION}" && \
     rm -rf /var/cache/apk/*
 
 ## Add the wait script to the image
