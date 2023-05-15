@@ -1,4 +1,4 @@
-FROM golang:1.20.0-alpine3.17
+FROM golang:1.20-alpine3.17
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="base"
@@ -14,7 +14,7 @@ ARG APK_MAKE_VERSION=~4
 ARG APK_OPENSSH_VERSION=~9
 ARG APK_GCC_VERSION=~12
 ARG APK_BUILDBASE_VERSION=~0
-ARG APK_CA_CERTIFICATES_VERSION=20220614-r4
+ARG APK_CA_CERTIFICATES_VERSION=~20230506
 ARG APK_BINUTILS_VERSION=~2
 
 RUN apk add --no-cache \

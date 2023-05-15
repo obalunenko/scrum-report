@@ -38,7 +38,7 @@ ARG WAIT_VERSION=2.9.0
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait /wait
 RUN chmod +x /wait
 
-FROM alpine:3.17.0 as deployment-container
+FROM alpine:3.17.0 AS deployment-container
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="dev"
@@ -51,7 +51,7 @@ RUN addgroup -S scrumreport -g ${UID} && \
 
 WORKDIR /
 
-ARG APK_CA_CERTIFICATES_VERSION=20220614-r4
+ARG APK_CA_CERTIFICATES_VERSION=~20230506
 
 RUN apk update && \
     apk add --no-cache \
