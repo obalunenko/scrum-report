@@ -28,7 +28,7 @@ services:
     container_name: scrum-report
     networks:
       - scrum_report
-    image: olegbalunenko/scrum-report
+    image: ghcr.io/obalunenko/scrum-report:latest
     environment:
       SCRUM_REPORT_APP_PORT: "8080"
       SCRUM_REPORT_APP_NAME: "scrum-report"

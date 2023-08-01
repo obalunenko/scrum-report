@@ -77,9 +77,9 @@ dockers:
     ids: ['service', 'scrum-report']
 
     image_templates:
-      - "olegbalunenko/scrum-report:latest"
-      - "olegbalunenko/scrum-report:{{ .Tag }}"
-      - "olegbalunenko/scrum-report:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/obalunenko/scrum-report:latest"
+      - "ghcr.io/obalunenko/scrum-report:{{ .Tag }}"
+      - "ghcr.io/obalunenko/scrum-report:v{{ .Major }}.{{ .Minor }}"
 
     # Skips the docker push. Could be useful if you also do draft releases.
     # If set to auto, the release will not be pushed to the docker repository
