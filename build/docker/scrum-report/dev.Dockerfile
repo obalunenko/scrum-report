@@ -16,6 +16,8 @@ COPY .git .git
 COPY cmd cmd
 COPY internal internal
 COPY scripts scripts
+COPY build build
+COPY deployments deployments
 COPY vendor vendor
 COPY go.mod go.mod
 COPY go.sum go.sum

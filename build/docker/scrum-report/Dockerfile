@@ -15,6 +15,8 @@ WORKDIR "${PROJECT_DIR}"
 COPY .git .git
 COPY cmd cmd
 COPY internal internal
+COPY build build
+COPY deployments deployments
 COPY scripts scripts
 COPY vendor vendor
 COPY go.mod go.mod
