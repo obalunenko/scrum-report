@@ -2,7 +2,6 @@
 .gitattributes
 .gitignore
 .goreleaser.yml
-deployments/
 sonar-project.properties
 dist/
 bin/
