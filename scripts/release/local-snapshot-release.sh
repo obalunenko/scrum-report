@@ -15,8 +15,7 @@ echo "${SCRIPT_NAME} is running fo ${APP}... "
 
 checkInstalled 'goreleaser'
 
-# Get new tags from the remote
-git fetch --tags -f
+goreleaser healthcheck
 
 COMMIT="$(git rev-parse HEAD)"
 SHORTCOMMIT="$(git rev-parse --short HEAD)"
@@ -39,4 +38,4 @@ export GO_BUILD_LDFLAGS="-s -w \
 -X ${BUILDINFO_VARS_PKG}.appname=${APP} \
 -X ${BUILDINFO_VARS_PKG}.goversion=${GOVERSION}"
 
-goreleaser --snapshot --skip-publish --rm-dist
+goreleaser --snapshot --skip-publish --clean
