@@ -106,7 +106,6 @@ archives:
   - id: service
     builds:
       - service
-    rlcp: true
     format: tar.gz
     wrap_in_directory: true
     format_overrides:
