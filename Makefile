@@ -41,7 +41,7 @@ help:
 
 
 ## Build project.
-build: sync-vendor generate compile-app
+build: compile-app
 .PHONY: build
 
 teardown-tools:
