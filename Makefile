@@ -15,6 +15,7 @@ SHELL := env GOTOOLS_IMAGE_TAG=$(GOTOOLS_IMAGE_TAG) $(SHELL)
 COMPOSE_TOOLS_FILE=deployments/docker-compose/go-tools-docker-compose.yml
 COMPOSE_TOOLS_CMD_BASE=docker compose -f $(COMPOSE_TOOLS_FILE)
 COMPOSE_TOOLS_CMD_UP=$(COMPOSE_TOOLS_CMD_BASE) up --remove-orphans --exit-code-from
+COMPOSE_TOOLS_CMD_DOWN=$(COMPOSE_TOOLS_CMD_BASE) down --volumes --remove-orphans
 COMPOSE_TOOLS_CMD_PULL=$(COMPOSE_TOOLS_CMD_BASE) build
 
 TARGET_MAX_CHAR_NUM=20
@@ -43,9 +44,13 @@ help:
 build: sync-vendor generate compile-app
 .PHONY: build
 
+teardown-tools:
+	$(COMPOSE_TOOLS_CMD_DOWN)
+.PHONY: teardown-tools
+
 ## Compile app.
 compile-app:
-	$(COMPOSE_TOOLS_CMD_UP) build build
+	./scripts/build/app.sh
 .PHONY: compile-app
 
 ## Test coverage report.
