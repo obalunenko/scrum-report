@@ -2,6 +2,7 @@ package reporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -55,26 +56,28 @@ func logResponseMiddleware(next http.Handler) http.Handler {
 type requestIDKey struct{}
 
 func requestIDMiddleware(next http.Handler) http.Handler {
+	const requestIDHeader = "X-Request-ID"
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rid := r.Header.Get("X-Request-ID")
+		idKeyHeader := http.CanonicalHeaderKey(requestIDHeader)
+
+		rid := r.Header.Get(idKeyHeader)
 
 		if rid == "" {
 			// New random request ID.
 			rid = newRequestID()
 
-			r.Header.Set("X-Request-ID", rid)
+			r.Header.Set(idKeyHeader, rid)
 		}
 
-		ctx := r.Context()
+		ctx := context.WithValue(r.Context(), requestIDKey{}, rid)
 
-		ctx = context.WithValue(ctx, requestIDKey{}, rid)
-
-		l := log.FromContext(r.Context())
+		l := log.FromContext(ctx)
 		l = l.WithField("request_id", rid)
 
-		ctx = log.ContextWithLogger(r.Context(), l)
+		ctx = log.ContextWithLogger(ctx, l)
 
-		w.Header().Set("X-Request-ID", rid)
+		w.Header().Set(idKeyHeader, rid)
 
 		r = r.WithContext(ctx)
 
@@ -110,7 +113,7 @@ func recoverMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.WithError(r.Context(), fmt.Errorf(fmt.Sprint(err))).Error("Panic recovered")
+				log.WithError(r.Context(), errors.New(fmt.Sprint(err))).Error("Panic recovered")
 			}
 		}()
 

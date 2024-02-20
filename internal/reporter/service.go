@@ -182,6 +182,12 @@ func newRouter(ctx context.Context) http.Handler {
 		handler := http.Handler(r.handlerFunc)
 
 		router.Handle(fmt.Sprintf("%s %s", r.method, r.path), mwApply(handler))
+
+		log.FromContext(ctx).WithFields(log.Fields{
+			"method":      r.method,
+			"path":        r.path,
+			"description": r.description,
+		}).Info("Route registered")
 	}
 
 	return router

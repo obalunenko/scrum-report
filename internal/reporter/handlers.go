@@ -48,7 +48,7 @@ func indexHandler(_ context.Context) http.HandlerFunc {
 	homePageHTML := string(assets.MustAsset("index.gohtml"))
 	homePageTmpl := template.Must(template.New("index").Parse(homePageHTML))
 
-	return func(writer http.ResponseWriter, request *http.Request) {
+	return func(writer http.ResponseWriter, _ *http.Request) {
 		writer.Header().Set("Content-Type", "text/html")
 
 		if err := homePageTmpl.Execute(writer, nil); err != nil {
@@ -57,9 +57,4 @@ func indexHandler(_ context.Context) http.HandlerFunc {
 			return
 		}
 	}
-}
-
-// optionsHandlerOld set up allowed verbs.
-func optionsHandler(writer http.ResponseWriter, _ *http.Request) {
-	writer.Header().Set("Allow", "GET,POST")
 }
