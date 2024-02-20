@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"os"
 
 	log "github.com/obalunenko/logger"
-	"github.com/obalunenko/version"
 
 	"github.com/obalunenko/scrum-report/cmd/scrum-report/internal/config"
 	"github.com/obalunenko/scrum-report/internal/reporter"
@@ -19,21 +19,10 @@ func main() {
 	defer cancel()
 
 	log.Init(ctx, log.Params{
-		Level:  config.LogLevel(),
-		Format: config.LogFormat(),
-		SentryParams: log.SentryParams{
-			Enabled:      config.LogSentryEnabled(),
-			DSN:          config.LogSentryDSN(),
-			TraceEnabled: config.LogSentryTraceEnabled(),
-			TraceLevel:   config.LogSentryTraceLevel(),
-			Tags: map[string]string{
-				"app_name":     version.GetAppName(),
-				"go_version":   version.GetGoVersion(),
-				"version":      version.GetVersion(),
-				"build_date":   version.GetBuildDate(),
-				"short_commit": version.GetShortCommit(),
-			},
-		},
+		Writer:     os.Stdout,
+		Level:      config.LogLevel(),
+		Format:     config.LogFormat(),
+		WithSource: false,
 	})
 
 	printVersion(ctx)
