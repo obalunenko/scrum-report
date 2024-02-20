@@ -4,8 +4,8 @@ github.com/davecgh/go-spew/spew
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
-# github.com/obalunenko/logger v1.0.1
-## explicit; go 1.21
+# github.com/obalunenko/logger v1.1.0
+## explicit; go 1.22
 github.com/obalunenko/logger
 # github.com/obalunenko/version v1.1.0
 ## explicit; go 1.17

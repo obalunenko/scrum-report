@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}" && git rev-parse --show-toplevel)"
 echo "${SCRIPT_NAME} is running... "
 
 sync_vendor() {
-  go mod tidy -v -e -go=1.20
+  go mod tidy -v -e
   go mod vendor
   go mod verify
 }

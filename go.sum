@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/obalunenko/logger v1.0.1 h1:XERBQry7q7Kxr6lDeh9RLsUr7oZj+T5J845B4RPxORE=
-github.com/obalunenko/logger v1.0.1/go.mod h1:BLGJLvxm4ImsjuGVOjrx59VUsbsLR2f7IkVPFjLyBvg=
+github.com/obalunenko/logger v1.1.0 h1:Q5drJuCuwz16mm96tcrl5e20uoGSOI4O+VWSauR/mQg=
+github.com/obalunenko/logger v1.1.0/go.mod h1:rS66dO9P2j/lybFrDB0Sce1DEVaOi6ag6WDIzljTg8c=
 github.com/obalunenko/version v1.1.0 h1:yVua7OHnK3+MJpendeMmAlfzVmq7R1h8MO3Ufz7HEec=
 github.com/obalunenko/version v1.1.0/go.mod h1:Or267aCQxNcAtgOeWA7yOe/RqJS4XDaMfcFwk3ohbOg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
