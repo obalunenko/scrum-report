@@ -30,7 +30,7 @@ RUN make build && \
 
 COPY ./build/docker/scrum-report/entrypoint.sh /app/entrypoint.sh
 
-FROM alpine:3.17.0 AS waiter
+FROM alpine:3.19 AS waiter
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="dev"
@@ -40,7 +40,7 @@ ARG WAIT_VERSION=2.9.0
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/${WAIT_VERSION}/wait /wait
 RUN chmod +x /wait
 
-FROM alpine:3.17.0 AS deployment-container
+FROM alpine:3.19 AS deployment-container
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="dev"

@@ -1,4 +1,4 @@
-FROM alpine:3.17.0
+FROM alpine:3.19
 LABEL maintainer="oleg.balunenko@gmail.com"
 LABEL org.opencontainers.image.source="https://github.com/obalunenko/scrum-report"
 LABEL stage="release"

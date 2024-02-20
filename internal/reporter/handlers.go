@@ -2,12 +2,8 @@ package reporter
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"net/http"
-	"time"
-
-	log "github.com/obalunenko/logger"
 
 	"github.com/obalunenko/scrum-report/internal/reporter/assets"
 )
@@ -66,21 +62,4 @@ func indexHandler(_ context.Context) http.HandlerFunc {
 // optionsHandlerOld set up allowed verbs.
 func optionsHandler(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Allow", "GET,POST")
-}
-
-// loggerHandlerOld Log all HTTP requests to output in a proper format.
-func loggerHandler(ctx context.Context, inner http.Handler, name string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		inner.ServeHTTP(w, r)
-
-		msg := fmt.Sprintf("%s\t%s\t%s\t%s",
-			r.Method,
-			r.RequestURI,
-			name,
-			time.Since(start))
-
-		log.Debug(ctx, msg)
-	})
 }

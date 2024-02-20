@@ -3,14 +3,13 @@ package reporter
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	log "github.com/obalunenko/logger"
 
 	"github.com/obalunenko/scrum-report/internal/server"
@@ -59,6 +58,21 @@ type Params struct {
 	Port    string
 }
 
+// logWriter is a simple writer that writes to logger.
+type logWriter struct {
+	log.Logger
+}
+
+func (l logWriter) Write(p []byte) (n int, err error) {
+	l.Info(string(p))
+
+	return len(p), nil
+}
+
+func (l logWriter) Close() error {
+	return nil
+}
+
 // New creates new service from passed config.
 func New(ctx context.Context, params Params) *Service {
 	ctx, cancel := context.WithCancel(ctx)
@@ -69,14 +83,14 @@ func New(ctx context.Context, params Params) *Service {
 
 	wg.Add(1)
 
-	logWriter := log.FromContext(ctx).Writer()
+	lw := logWriter{log.FromContext(ctx)}
 
 	srv := server.New(
 		ctx,
 		&wg,
 		params.AppName,
 		params.Port,
-		logWriter,
+		lw,
 		handler,
 		func(wg *sync.WaitGroup, s *http.Server) {
 			defer wg.Done()
@@ -85,7 +99,7 @@ func New(ctx context.Context, params Params) *Service {
 
 			s.SetKeepAlivesEnabled(false)
 
-			if err := logWriter.Close(); err != nil {
+			if err := lw.Close(); err != nil {
 				s.ErrorLog.Printf("failed to close log writer: %v", err)
 			}
 		},
@@ -145,24 +159,29 @@ func (s *Service) Run() chan struct{} {
 
 // newRouter creates a new reporter service handler.
 func newRouter(ctx context.Context) http.Handler {
-	router := mux.NewRouter().StrictSlash(true)
+	router := http.NewServeMux()
 
-	// Register preflight handler
-	options := http.HandlerFunc(optionsHandler)
-	router.
-		Methods(http.MethodOptions).
-		Handler(options)
+	mw := []func(http.Handler) http.Handler{
+		logRequestMiddleware,
+		logResponseMiddleware,
+		requestIDMiddleware,
+		recoverMiddleware,
+		loggerMiddleware,
+		corsMiddleware,
+	}
 
-	for _, route := range routes(ctx) {
-		handler := http.Handler(route.handlerFunc)
-		handler = loggerHandler(ctx, handler, route.description)
-		handler = handlers.CompressHandler(handler)
+	mwApply := func(h http.Handler) http.Handler {
+		for i := range mw {
+			h = mw[i](h)
+		}
 
-		router.
-			Methods(route.method).
-			Path(route.path).
-			Name(route.description).
-			Handler(handler)
+		return h
+	}
+
+	for _, r := range routes(ctx) {
+		handler := http.Handler(r.handlerFunc)
+
+		router.Handle(fmt.Sprintf("%s %s", r.method, r.path), mwApply(handler))
 	}
 
 	return router
