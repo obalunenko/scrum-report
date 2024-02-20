@@ -9,6 +9,8 @@ VERSION ?= $(shell git describe --tags $(git rev-list --tags --max-count=1))
 APP_NAME?=scrum-report
 SHELL := env APP_NAME=$(APP_NAME) $(SHELL)
 
+GOVERSION:=1.22
+
 GOTOOLS_IMAGE_TAG?=v0.13.0
 SHELL := env GOTOOLS_IMAGE_TAG=$(GOTOOLS_IMAGE_TAG) $(SHELL)
 
@@ -284,6 +286,10 @@ open-container-logs:
 open-scrum-report:
 	./scripts/browser-opener.sh -u 'http://localhost.charlesproxy.com:8080/'
 .PHONY: open-scrum-report
+
+bump-go-version:
+	./scripts/bump-go.sh $(GOVERSION)
+.PHONY: bump-go-version
 
 .DEFAULT_GOAL := help
 
